@@ -1,0 +1,130 @@
+from flask import Flask
+from models import db
+from api.products import products_bp
+from api.users import users_bp
+from api.carts import carts_bp
+from api.orders import orders_bp
+from api.auth import auth_bp
+from flask_jwt_extended import JWTManager
+from flasgger import Swagger
+from flasgger import Swagger
+# swagger_template = {
+#     "swagger": "2.0",
+#     "info": {
+#         "title": "Ecommerce API",
+#         "description": "API docs for Ecommerce Platform",
+#         "version": "1.0"
+#     },
+#     "securityDefinitions": {
+#         "Bearer": {
+#             "type": "apiKey",
+#             "name": "Authorization",
+#             "in": "header",
+#             "description": "請輸入 Bearer + 空格 + JWT 權杖（如：Bearer eyJ...）"
+#         }
+#     },
+#     "definitions": {
+#         "User": {
+#             "type": "object",
+#             "properties": {
+#                 "id": {"type": "integer", "example": 1},
+#                 "username": {"type": "string", "example": "tsai"},
+#                 "email": {"type": "string", "example": "tsai@example.com"},
+#                 "full_name": {"type": "string", "example": "Tsai Jei Lun"},
+#                 "address": {"type": "string", "example": "台南市大學路1號"},
+#                 "phone": {"type": "string", "example": "0900-123456"},
+#                 "created_at": {"type": "string", "example": "2025-06-01 22:22:58"},
+#                 "role": {"type": "string", "example": "user"}
+#             }
+#         },
+#         "Product": {
+#             "type": "object",
+#             "properties": {
+#                 "id": {"type": "integer", "example": 1},
+#                 "title": {"type": "string", "example": "iPhone 99"},
+#                 "price": {"type": "number", "example": 9999},
+#                 "description": {"type": "string", "example": "旗艦手機"},
+#                 "image": {"type": "string", "example": "http://img"},
+#                 "category_id": {"type": "integer", "example": 1}
+#             }
+#         },
+#         "Order": {
+#             "type": "object",
+#             "properties": {
+#                 "order_id": {"type": "integer", "example": 1},
+#                 "user_id": {"type": "integer", "example": 1},
+#                 "order_date": {"type": "string", "example": "2025-06-01T14:22:58"},
+#                 "total": {"type": "number", "example": 9999},
+#                 "status": {"type": "string", "example": "pending"},
+#                 "items": {
+#                     "type": "array",
+#                     "items": {"$ref": "#/definitions/OrderItem"}
+#                 }
+#             }
+#         },
+#         "OrderItem": {
+#             "type": "object",
+#             "properties": {
+#                 "product_id": {"type": "integer", "example": 1},
+#                 "title": {"type": "string", "example": "iPhone 99"},
+#                 "price": {"type": "number", "example": 9999},
+#                 "quantity": {"type": "integer", "example": 2}
+#             }
+#         },
+#         "Cart": {
+#             "type": "object",
+#             "properties": {
+#                 "id": {"type": "integer", "example": 1},
+#                 "user_id": {"type": "integer", "example": 1},
+#                 "created_at": {"type": "string", "example": "2025-06-01T14:22:58"},
+#                 "status": {"type": "string", "example": "active"},
+#                 "items": {
+#                     "type": "array",
+#                     "items": {"$ref": "#/definitions/CartItem"}
+#                 }
+#             }
+#         },
+#         "CartItem": {
+#             "type": "object",
+#             "properties": {
+#                 "product_id": {"type": "integer", "example": 1},
+#                 "title": {"type": "string", "example": "iPhone 99"},
+#                 "price": {"type": "number", "example": 9999},
+#                 "quantity": {"type": "integer", "example": 2}
+#             }
+#         }
+#     }
+# }
+
+
+def create_app(test_config=None):
+    app = Flask(__name__)
+
+    # 預設用正式資料庫
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:talen168168@localhost:5432/Ecommerce'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['JWT_SECRET_KEY'] = 'w1235s1531ed3'
+    Swagger(app)#, template=swagger_template)
+
+
+    # 如果有測試用 config 傳進來，會覆蓋預設設定
+    if test_config:
+        app.config.update(test_config)
+
+    db.init_app(app)
+
+    # 註冊 Blueprint
+    app.register_blueprint(products_bp)
+    app.register_blueprint(users_bp)
+    app.register_blueprint(carts_bp)
+    app.register_blueprint(orders_bp)
+    app.register_blueprint(auth_bp)
+
+    JWTManager(app)
+
+    return app
+
+# 只在本機執行才會啟動 Flask 伺服器
+if __name__ == '__main__':
+    app = create_app()
+    app.run(debug=True)
