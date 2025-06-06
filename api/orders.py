@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Order, OrderItem, Product  # 你的 models.py 需有這三個 Model
+from models import db, Order, OrderItem, Product 
 
 orders_bp = Blueprint('orders', __name__, url_prefix='/orders')
 
@@ -13,7 +13,8 @@ def get_orders(user_id):
     if int(current_user) != user_id:
         return jsonify({"error": "Permission denied"}), 403
 
-    orders = Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()).all()
+    orders = Order.for_user(user_id=user_id)
+    Order.query.filter_by(user_id=user_id)
     result = []
     for order in orders:
         result.append({
@@ -23,6 +24,7 @@ def get_orders(user_id):
             "status": order.status
         })
     return jsonify(result)
+
 
 # 查詢訂單明細
 @orders_bp.route('/order/<int:order_id>', methods=['GET'])
