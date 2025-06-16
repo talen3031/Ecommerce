@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import  jwt_required
 from models import db, User
+from service.user_service import UserService
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -59,29 +59,30 @@ def register():
               type: string
               example: "Username or email already exists"
     """
+    
     data = request.json
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-    role = data.get('role')
+    role = data.get('role','user')
+    full_name = data.get('full_name',None) 
+    address = data.get('address',None) 
+    phone = data.get('phone',None) 
+    try:
+      user = UserService.create(username = username, 
+                            email = email, 
+                            password = password, 
+                            full_name = full_name, 
+                            address = address, 
+                            phone = phone, 
+                            role = role)
+    except ValueError as e:
+        # 檢查訊息內容決定 400 or 409
+        msg = str(e)
+        code = 409 if "already exists" in msg else 400
+        return jsonify({"error": msg}), code
     
-    if not username or not email or not password:
-        return jsonify({'error': 'Missing username, email or password'}), 400
-
-    if User.query.filter((User.username == username) | (User.email == email)).first():
-        return jsonify({'error': 'Username or email already exists'}), 409
-    #產生雜湊
-    hashed_pw = generate_password_hash(password)
-
-    #若是admin...................................
-    if role=='admin':
-        user = User(username=username, email=email, password=hashed_pw,role=role)
-    else:
-        user = User(username=username, email=email, password=hashed_pw)
-
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({'message': 'Register success', 'user_id': user.id})
+    return jsonify({'message': 'Register success', 'user_id': user.id}), 201
 
 # 登入
 @auth_bp.route('/login', methods=['POST'])
@@ -141,14 +142,11 @@ def login():
     password = data.get('password')
     if not username or not password:
         return jsonify({'error': 'Missing username or password'}), 400
-
-    user = User.query.filter_by(username=username).first()
-    if not user or not check_password_hash(user.password, password):
-        return jsonify({'error': 'Invalid username or password'}), 401
-
-    access_token = create_access_token(identity=str(user.id), additional_claims={"role": user.role if hasattr(user, "role") else "user"})
-    return jsonify({'access_token': access_token, 'user_id': user.id, 'role': user.role if hasattr(user, "role") else "user"})
-
+    try:
+        result = UserService.login(username, password)
+        return jsonify(result), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 401  # 401 Unauthorized
 # 登出
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()

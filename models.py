@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Enum
+from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
@@ -23,17 +24,38 @@ class Product(db.Model):
     )
 
     @classmethod
-    def search(cls, keyword=None, category_id=None, min_price=None, max_price=None):
-        query = cls.query
-        if category_id:
-            query = query.filter_by(category_id=category_id)
-        if keyword:
-            query = query.filter(cls.title.ilike(f"%{keyword}%"))
-        if min_price is not None:
-            query = query.filter(cls.price >= min_price)
-        if max_price is not None:
-            query = query.filter(cls.price <= max_price)
-        return query.all()
+    def get_by_product_id(cls, product_id):
+        return cls.query.filter_by(id=product_id).first()
+    
+    @classmethod
+    def get_by_category_id(cls, category_id):
+        return cls.query.filter_by(category_id=category_id).all()
+
+    @classmethod
+    def get_by_keyword(cls, keyword):
+        return cls.query.filter(cls.title.ilike(f"%{keyword}%")).all()
+
+    @classmethod
+    def get_by_min_price(cls, min_price):
+        return cls.query.filter(cls.price >= min_price).all()
+
+    @classmethod
+    def get_by_max_price(cls, max_price):
+        return cls.query.filter(cls.price <= max_price).all()
+
+    @classmethod
+    def get_by_price_range(cls, min_price, max_price):
+        return cls.query.filter(cls.price >= min_price, cls.price <= max_price).all()
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "price": float(self.price),
+            "description": self.description,
+            "category_id": self.category_id,
+            "image": self.image
+        }
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -46,14 +68,30 @@ class User(db.Model):
     phone = db.Column(db.String(50))
     created_at = db.Column(db.DateTime)
     role = db.Column(db.String(20), default='user')
-
+ 
     @classmethod
     def get_by_username(cls, username):
         return cls.query.filter_by(username=username).first()
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        return cls.query.filter_by(id=user_id).first()
+    
     @classmethod
     def get_by_email(cls, email):
         return cls.query.filter_by(email=email).first()
-
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "full_name": self.full_name,
+            "address": self.address,
+            "phone": self.phone,
+            "created_at": str(self.created_at) if self.created_at else None,
+            "role": self.role
+        }
 ORDER_STATUS = [
         'pending',
         'paid',
@@ -72,19 +110,29 @@ class Order(db.Model):
     total = db.Column(db.Numeric)
     status = db.Column(Enum(*ORDER_STATUS, name="order_status_enum"), default='pending', nullable=False)
     user = db.relationship('User', backref=db.backref('orders', lazy=True))
-    #查詢訂單明細
-    @classmethod
-    def get_items_by_order_id(cls, order_id):
-        """
-        取得指定訂單（order_id）的所有明細（含商品資料）
-        """
-        return cls.query.filter_by(order_id=order_id).all()
+    
 
+    @classmethod
+    def get_by_order_id(cls, order_id):
+        return cls.query.filter_by(order_id=order_id).first()
+   
     #查詢某用戶所有訂單（依日期排序）
     @classmethod
-    def for_user(cls, user_id):
+    def get_by_user_id(cls, user_id):
         return cls.query.filter_by(user_id=user_id).order_by(cls.order_date.desc()).all()
 
+    def to_dict(self, include_user=False):
+        data = {
+            "id": self.id,
+            "user_id": self.user_id,
+            "order_date": self.order_date.isoformat() if self.order_date else None,
+            "total": float(self.total) if self.total is not None else 0.0,
+            "status": self.status
+        }
+        if include_user:
+            data["user"] = self.user.to_dict() if self.user else None
+        return data
+    
 class OrderItem(db.Model):
     __tablename__ = 'order_items'
     id = db.Column(db.Integer, primary_key=True)
@@ -99,23 +147,9 @@ class OrderItem(db.Model):
     )
 
     @classmethod
-    def count_total_price(cls, user_id,statuses=None):
-        from models import Order  # 避免循環 import
-        # 先查該 user_id 的所有 Order id
-        query = db.session.query(Order.id).filter(Order.user_id == user_id)
-        
-        #若有指定要哪種訂單狀態
-        if statuses:
-            if isinstance(statuses, str):
-                statuses = [statuses]
-            query = query.filter(Order.status.in_(statuses))
-        user_order_ids = query
-
-        # 對 order_items 進行金額總和（單價*數量）
-        total = db.session.query(
-            func.coalesce(func.sum(cls.price * cls.quantity), 0)
-        ).filter(cls.order_id.in_(user_order_ids)).scalar()
-        return float(total) if total else 0.0
+    def get_by_order_id(cls, order_id):
+        return cls.query.filter_by(order_id=order_id).all()
+    
 
 class Cart(db.Model):
     __tablename__ = 'carts'

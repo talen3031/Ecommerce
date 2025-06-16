@@ -43,6 +43,8 @@ def test_create_get_update_delete_product(client, admin_token):
                           'image': 'http://image'
                       },
                       headers={'Authorization': f'Bearer {admin_token}'})
+    
+    
     assert res.status_code == 200
     product_id = res.get_json()['product_id']
 

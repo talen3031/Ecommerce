@@ -3,6 +3,8 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from api.decorate import admin_required
 from models import db, Product  
+from service.product_service import ProductService
+
 """
 definitions:
   Product:
@@ -58,25 +60,19 @@ def get_products():
     """
     category_id = request.args.get('category_id', type=int)
     keyword = request.args.get('keyword', type=str)
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    
+    products = ProductService.search(
+        category_id = category_id, 
+        keyword = keyword, 
+        min_price = min_price, 
+        max_price = max_price
+    )
 
-    query = Product.query
-    if category_id:
-        query = query.filter_by(category_id=category_id)
-    if keyword:
-        query = query.filter(Product.title.ilike(f"%{keyword}%"))
+    result =[ product.to_dict() for product in products ] 
+    
 
-    products = query.all()
-    result = [
-        {
-            "id": p.id,
-            "title": p.title,
-            "price": float(p.price),
-            "description": p.description,
-            "image": p.image,
-            "category_id": p.category_id
-        }
-        for p in products
-    ]
     return jsonify(result)
 
 # 查詢單一商品
@@ -114,17 +110,10 @@ def get_product(product_id):
       404:
         description: 商品不存在
     """
-    product = db.session.get(Product, product_id)
+    product = Product.get_by_product_id(product_id)
+    
     if product:
-        result = {
-            "id": product.id,
-            "title": product.title,
-            "price": float(product.price),
-            "description": product.description,
-            "image": product.image,
-            "category_id": product.category_id
-        }
-        return jsonify(result)
+        return jsonify(product.to_dict())
     else:
         return jsonify({"error": "Product not found"}), 404
 
@@ -186,18 +175,17 @@ def create_product():
     description = data.get('description', '')
     category_id = data.get('category_id')
     image = data.get('image', '')
-    if not title or price is None or not category_id:
-        return jsonify({"error": "title, price, category_id are required"}), 400
+    try:
+      product = ProductService.create_product(
+          title=title,
+          price=price,
+          description=description,
+          category_id=category_id,
+          image=image
+      )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
-    product = Product(
-        title=title,
-        price=price,
-        description=description,
-        category_id=category_id,
-        image=image
-    )
-    db.session.add(product)
-    db.session.commit()
     return jsonify({"message": "Product created", "product_id": product.id})
 
 # 修改商品（全部覆蓋）
@@ -258,27 +246,25 @@ def update_product(product_id):
       404:
         description: 商品不存在
     """
+    
     data = request.json
     title = data.get('title')
     price = data.get('price')
-    description = data.get('description', '')
+    description = data.get('description')
     category_id = data.get('category_id')
-    image = data.get('image', '')
-    if not title or price is None or not category_id:
-        return jsonify({"error": "title, price, category_id are required"}), 400
+    image = data.get('image')
 
-    product = db.session.get(Product, product_id)
-    if not product:
-        return jsonify({"error": "Product not found"}), 404
+    try:
+        product_update = ProductService.update_product(product_id=product_id,
+                            title=title, 
+                            price=price, 
+                            category_id=category_id,
+                            description=description, 
+                            image=image)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
 
-    product.title = title
-    product.price = price
-    product.description = description
-    product.category_id = category_id
-    product.image = image
-
-    db.session.commit()
-    return jsonify({"message": "Product updated", "product_id": product.id})
+    return jsonify({"message": "Product updated", "product_id": product_update.id})
 
 # 刪除商品
 @products_bp.route('/delete/<int:product_id>', methods=['DELETE'])
@@ -311,10 +297,12 @@ def delete_product(product_id):
       404:
         description: 商品不存在
     """
-    product =  db.session.get(Product, product_id)
-    if not product:
-        return jsonify({"error": "Product not found"}), 404
 
-    db.session.delete(product)
-    db.session.commit()
-    return jsonify({"message": "Product deleted", "product_id": product_id})
+    
+    try:
+        product = ProductService.delete_product(product_id)
+        
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    
+    return jsonify({"message": "Product deleted", "product_id": product.id})

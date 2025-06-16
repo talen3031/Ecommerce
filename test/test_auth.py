@@ -13,7 +13,7 @@ def test_register_and_login(client):
         'email': 'pytest@example.com',
         'password': '123456'
     })
-    assert res.status_code == 200
+    assert res.status_code == 201
     data = res.get_json()
     assert 'user_id' in data
 

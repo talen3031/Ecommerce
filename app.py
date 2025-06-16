@@ -7,7 +7,7 @@ from api.orders import orders_bp
 from api.auth import auth_bp
 from flask_jwt_extended import JWTManager
 from flasgger import Swagger
-from flasgger import Swagger
+
 swagger_template = {
     "swagger": "2.0",
     "info": {

@@ -61,24 +61,19 @@ def get_user(user_id):
               example: "User not found"
     """
     # 只允許本人查自己
+    
     current_user = get_jwt_identity()
     if int(current_user) != user_id:
         return jsonify({"error": "you only can search your own information"}), 403
 
-    user = db.session.get(User, user_id)
+    user = User.get_by_user_id(user_id=user_id)
+
     if user:
-        return jsonify({
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "full_name": user.full_name,
-            "address": user.address,
-            "phone": user.phone,
-            "created_at": str(user.created_at) if user.created_at else None,
-            "role": user.role 
-        })
+        return jsonify(user.to_dict())
     else:
         return jsonify({"error": "User not found"}), 404
+    
+
 #查詢所有使用者
 @users_bp.route('/all', methods=['GET'])
 @admin_required
@@ -121,15 +116,8 @@ def get_all_user():
     """
     users = User.query.all()
     result = []
+    
     for user in users:
-        result.append({
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "full_name": user.full_name,
-            "address": user.address,
-            "phone": user.phone,
-            "created_at": str(user.created_at) if user.created_at else None,
-            "role": user.role 
-        })
+        result.append(user.to_dict())
+
     return jsonify(result)

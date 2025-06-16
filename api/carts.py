@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Cart, CartItem, Product, Order, OrderItem
 from datetime import datetime
+from service.cart_service import CartService
+
 
 carts_bp = Blueprint('carts', __name__, url_prefix='/cart')
 #查詢購物車
@@ -70,21 +72,10 @@ def get_cart(user_id):
     if int(current_user) != user_id:
         return jsonify({"error": "Permission denied"}), 403
 
-    cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
+    cart = CartService.get_cart(user_id=user_id)
     if not cart:
         return jsonify({"cart": None, "items": []})
-
-    items = [
-        {
-            "product_id": item.product_id,
-            "title": item.product.title,
-            "price": float(item.product.price),
-            "quantity": item.quantity
-        }
-        for item in cart.cart_items
-    ]
-    return jsonify({"cart_id": cart.id, "items": items})
-
+    return jsonify(cart)
 
 #加入商品至購物車
 @carts_bp.route('/<int:user_id>/add', methods=['POST'])
@@ -153,21 +144,9 @@ def add_to_cart(user_id):
     data = request.json
     product_id = data.get("product_id")
     quantity = data.get("quantity", 1)
-
-    cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
-    if not cart:
-        cart = Cart(user_id=user_id, created_at=datetime.now(), status='active')
-        db.session.add(cart)
-        db.session.commit()
-    # 檢查有沒有這個商品
-    cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
-    if cart_item:
-        cart_item.quantity += quantity
-    else:
-        cart_item = CartItem(cart_id=cart.id, product_id=product_id, quantity=quantity)
-        db.session.add(cart_item)
-    db.session.commit()
-    return jsonify({"message": "Added to cart", "cart_id": cart.id})
+    cart_item = CartService.add_to_cart(user_id=user_id, product_id=product_id, quantity=quantity)
+    
+    return jsonify({"message": "Added to cart", "cart_id": cart_item.cart_id})
 
 
 
@@ -238,17 +217,12 @@ def remove_from_cart(user_id):
     if not product_id:
         return jsonify({"error": "Missing product_id"}), 400
 
-    cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
-    if not cart:
-        return jsonify({"error": "No active cart found"}), 404
-
-    cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
-    if cart_item:
-        db.session.delete(cart_item)
-        db.session.commit()
-        return jsonify({"message": "Removed product from cart", "cart_id": cart.id})
-    else:
-        return jsonify({"error": "Product not in cart"}), 404
+    try:
+        cart_item = CartService.remove_from_cart(user_id=user_id, product_id=product_id)
+        return jsonify({"message": "Removed product from cart", "cart_id": cart_item.cart_id}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    
 
 # 調整購物車內商品數量
 @carts_bp.route('/<int:user_id>/update', methods=['PUT'])
@@ -318,23 +292,16 @@ def update_cart_item(user_id):
     data = request.json
     product_id = data.get("product_id")
     quantity = data.get("quantity")
-    
-    if (not product_id) or quantity is None:
+    if not product_id or quantity is None:
         return jsonify({"error": "Missing product_id or quantity"}), 400
     if quantity < 1:
         return jsonify({"error": "Quantity must be at least 1"}), 400
 
-    cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
-    if not cart:
-        return jsonify({"error": "No active cart found"}), 404
-
-    cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
-    if not cart_item:
-        return jsonify({"error": "Product not in cart"}), 404
-
-    cart_item.quantity = quantity
-    db.session.commit()
-    return jsonify({"message": "Updated product quantity in cart", "cart_id": cart.id})
+    try:
+        cart_item = CartService.update_cart_item(user_id=user_id, product_id=product_id, quantity=quantity)
+        return jsonify({"message": "Updated product quantity in cart", "cart_id": cart_item.cart_id}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
 
 # 結帳
 @carts_bp.route('/<int:user_id>/checkout', methods=['POST'])
@@ -346,45 +313,11 @@ def checkout_cart(user_id):
 
     data = request.json
     items_to_checkout = data.get("items")
+    
     if not items_to_checkout or not isinstance(items_to_checkout, list):
         return jsonify({"error": "Must provide items to checkout"}), 400
-
-    cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
-    if not cart:
-        return jsonify({"error": "No active cart to checkout"}), 404
-
-    # 驗證每個商品與數量
-    for item in items_to_checkout:
-        product_id = item.get("product_id")
-        quantity = item.get("quantity", 1)
-        cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
-        if not cart_item or quantity > cart_item.quantity:
-            return jsonify({"error": f"Product {product_id} quantity not enough in cart"}), 400
-
-    order = Order(user_id=user_id, order_date=datetime.now(), total=0, status='pending')
-    db.session.add(order)
-    db.session.flush()  # 先獲得 order.id
-
-    total = 0
-    for item in items_to_checkout:
-        product_id = item.get("product_id")
-        quantity = item.get("quantity", 1)
-        product = db.session.get(Product,product_id)
-        price = product.price if product else 0
-        total += price * quantity
-        order_item = OrderItem(order_id=order.id, product_id=product_id, quantity=quantity, price=price)
-        db.session.add(order_item)
-        # 從購物車扣除數量
-        cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
-        if cart_item.quantity == quantity:
-            db.session.delete(cart_item)
-        else:
-            cart_item.quantity -= quantity
-
-    order.total = total
-    # 如果購物車已經沒有商品，就將狀態設為 checked_out
-    if len(cart.cart_items) == 0:
-        cart.status = 'checked_out'
-
-    db.session.commit()
-    return jsonify({"message": "Partial checkout success", "order_id": order.id, "total": float(total)})
+    try:
+        result = CartService.checkout_cart(user_id=user_id, items_to_checkout=items_to_checkout)
+        return jsonify(result), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
