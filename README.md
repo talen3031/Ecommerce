@@ -4,7 +4,6 @@
 本專案為一套**簡易電商後台 API 伺服器**，支援用戶註冊登入、商品管理、訂單管理等核心功能。  
 提供 JWT 使用者認證、Swagger API 文件、ORM 資料存取，後端採用 Python Flask 與 PostgreSQL 資料庫設計。  
 包含 API 架構、RESTful 設計、資料庫實作、權限驗證、測試自動化(pytest)等主題。
-
 2025/06 新增「管理員操作日誌（Audit Log）」、「分頁查詢」、「Service Layer 重構」等進階能力，強化系統彈性與維護性。
 ---
 
