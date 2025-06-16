@@ -1,5 +1,6 @@
-from models import db, Order,OrderItem,Product
-from sqlalchemy import func
+from models import db, Order,Product
+from exceptions import NotFoundError
+
 class OrderService:
     @staticmethod
     def create(user_id, order_date, total=0, status='pending'):
@@ -19,15 +20,19 @@ class OrderService:
     
     @staticmethod
     def get_user_orders(user_id):
-        """查詢某用戶的全部訂單，依日期排序"""
         return Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()).all()
+    
+    @staticmethod
+    def get_user_orders(user_id, page=1, per_page=10):
+        """查詢某用戶的全部訂單，依日期排序"""
+        return Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()).paginate(page=page, per_page=per_page, error_out=False)
 
     @staticmethod
     def get_order_detail(order_id):
         """查詢單一訂單的詳細資料，含所有明細商品"""
         order = Order.query.filter_by(id=order_id).first()
         if not order:
-            return None
+            raise NotFoundError("Order not found")
         # 組合 items 清單
         items = []
         for item in order.order_items:
@@ -53,7 +58,7 @@ class OrderService:
         """取消訂單"""
         order = Order.query.filter_by(id=order_id).first()
         if not order:
-            raise ValueError("Order not found")
+            raise NotFoundError("Order not found")
         if order.status != 'pending':
             raise ValueError("Only pending orders can be cancelled")
         order.status = 'cancelled'
@@ -69,7 +74,7 @@ class OrderService:
         ]
         order = db.session.get(Order, order_id)
         if not order:
-            raise ValueError("Order not found")
+            raise NotFoundError("Order not found")
         if status not in ORDER_STATUS:
             raise ValueError("Status in wrong format")
         if order.status == status:

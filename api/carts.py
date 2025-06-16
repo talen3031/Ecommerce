@@ -3,11 +3,11 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Cart, CartItem, Product, Order, OrderItem
 from datetime import datetime
 from service.cart_service import CartService
+from service.audit_service import AuditService
 
 
 carts_bp = Blueprint('carts', __name__, url_prefix='/cart')
 #查詢購物車
-
 @carts_bp.route('/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_cart(user_id):
@@ -89,31 +89,25 @@ def add_to_cart(user_id):
     security:
       - Bearer: []
     parameters:
+      - in: path
+        name: user_id
+        type: integer
+        required: true
+        description: 用戶ID
       - in: body
         name: body
         required: true
         schema:
-          id: Product_info
-          required:
-            - title
-            - price
-            - category_id
+          type: object
           properties:
-            title:
-              type: string
-              example: "iPhone 99"
-            price:
-              type: number
-              example: 9999
-            description:
-              type: string
-              example: "最新旗艦手機"
-            category_id:
+            product_id:
               type: integer
               example: 1
-            image:
-              type: string
-              example: "http://example.com/img.jpg"
+            quantity:
+              type: integer
+              example: 1
+          required:
+            - product_id
     responses:
       200:
         description: 加入購物車
@@ -142,10 +136,21 @@ def add_to_cart(user_id):
         return jsonify({"error": "Permission denied"}), 403
 
     data = request.json
+    
     product_id = data.get("product_id")
     quantity = data.get("quantity", 1)
+    if not product_id:
+        return jsonify({"error": "Missing product_id"}), 400
     cart_item = CartService.add_to_cart(user_id=user_id, product_id=product_id, quantity=quantity)
     
+    
+    AuditService.log(
+        user_id=user_id,
+        action='add',
+        target_type='cart_item',
+        target_id=cart_item.cart_id,
+        description=f"add prodcut{product_id} quantity: {quantity} to cart{cart_item.cart_id}"
+    )
     return jsonify({"message": "Added to cart", "cart_id": cart_item.cart_id})
 
 
@@ -162,14 +167,19 @@ def remove_from_cart(user_id):
     security:
       - Bearer: []
     parameters:
+      - in: path
+        name: user_id
+        type: integer
+        required: true
+        description: 用戶ID
       - in: body
         name: body
         required: true
         schema:
-          id: Product_id
+          type: object
           properties:
-            prodcut_id:
-              type: number
+            product_id:
+              type: integer
               example: 1
     responses:
       200:
@@ -217,11 +227,17 @@ def remove_from_cart(user_id):
     if not product_id:
         return jsonify({"error": "Missing product_id"}), 400
 
-    try:
-        cart_item = CartService.remove_from_cart(user_id=user_id, product_id=product_id)
-        return jsonify({"message": "Removed product from cart", "cart_id": cart_item.cart_id}), 200
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+    cart_item = CartService.remove_from_cart(user_id=user_id, product_id=product_id)
+     
+    AuditService.log(
+        user_id=current_user,
+        action='delete',
+        target_type='cart_item',
+        target_id=cart_item.id,
+        description=f"Delete product_id={product_id} from cart_id={cart_item.cart_id}"
+    )
+    return jsonify({"message": "Removed product from cart", "cart_id": cart_item.cart_id}), 200
+
     
 
 # 調整購物車內商品數量
@@ -236,18 +252,25 @@ def update_cart_item(user_id):
     security:
       - Bearer: []
     parameters:
+      - in: path
+        name: user_id
+        type: integer
+        required: true
+        description: 用戶ID
       - in: body
         name: body
         required: true
         schema:
-          id: Product_id_quantity
+          type: object
           properties:
-            prodcut_id:
-              type: number
-              example: "iPhone 99"
+            product_id:
+              type: integer
+              example: 1
             quantity:
-              type: number
-              example: 6
+              type: integer
+              example: 1
+          required:
+            - product_id
     responses:
       200:
         description: 成功從購物車更新商品數量
@@ -290,34 +313,137 @@ def update_cart_item(user_id):
         return jsonify({"error": "Permission denied"}), 403
 
     data = request.json
-    product_id = data.get("product_id")
+    product_id = int(data.get("product_id"))
     quantity = data.get("quantity")
+    
     if not product_id or quantity is None:
         return jsonify({"error": "Missing product_id or quantity"}), 400
-    if quantity < 1:
-        return jsonify({"error": "Quantity must be at least 1"}), 400
-
     try:
-        cart_item = CartService.update_cart_item(user_id=user_id, product_id=product_id, quantity=quantity)
-        return jsonify({"message": "Updated product quantity in cart", "cart_id": cart_item.cart_id}), 200
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        product_id = int(product_id)
+    except ValueError:
+        return jsonify({"error": "Invalid product_id"}), 400
+
+    cart_item ,old_qty= CartService.update_cart_item(user_id=user_id, product_id=product_id, quantity=quantity)
+    
+    AuditService.log(
+        user_id=current_user,
+        action='update',
+        target_type='cart_item',
+        target_id=cart_item.id,
+        description=f"product_id={product_id}, cart_id={cart_item.cart_id}, qty {old_qty} -> {quantity}"
+    )
+    return jsonify({"message": f"Updated product quantity {old_qty} -> {quantity} in cart{cart_item.cart_id}"}), 200
 
 # 結帳
 @carts_bp.route('/<int:user_id>/checkout', methods=['POST'])
 @jwt_required()
 def checkout_cart(user_id):
+    """
+    結帳 (需登入)
+    ---
+    summary: 結帳（將購物車商品生成訂單）
+    tags:
+      - carts
+    security:
+      - Bearer: []
+    parameters:
+      - in: path
+        name: user_id
+        type: integer
+        required: true
+        description: 用戶ID
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            items:
+              type: array
+              description: "要結帳的商品清單，若傳 'all' 則結帳購物車內所有商品"
+              items:
+                type: object
+                properties:
+                  product_id:
+                    type: integer
+                    example: 1
+                  quantity:
+                    type: integer
+                    example: 2
+              example:
+                - product_id: 1
+                  quantity: 2
+                - product_id: 3
+                  quantity: 1
+          required:
+            - items
+    responses:
+      200:
+        description: 結帳成功
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Partial checkout success"
+            order_id:
+              type: integer
+              example: 1001
+            total:
+              type: number
+              example: 3999.0
+      400:
+        description: 資料格式錯誤或缺少結帳商品
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Must provide items to checkout"
+      403:
+        description: 權限不足
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Permission denied"
+    """
     current_user = get_jwt_identity()
     if int(current_user) != user_id:
         return jsonify({"error": "Permission denied"}), 403
 
-    data = request.json
+    data = request.json or {}
     items_to_checkout = data.get("items")
-    
+
+    # 若傳入'all' or 'ALL'
+    if isinstance(items_to_checkout, str) and items_to_checkout.lower() == "all":
+        cart = CartService.get_cart(user_id=user_id)
+        if not cart or not cart.get("items"):
+            return jsonify({"error": "Cart is empty"}), 400
+
+        items_to_checkout = [
+            {"product_id": item["product_id"], "quantity": item["quantity"]}
+            for item in cart["items"]
+        ]
+        if not items_to_checkout:
+            return jsonify({"error": "Cart is empty"}), 400
+
+    # 檢查 items_to_checkout 是否為 list 並且非空
     if not items_to_checkout or not isinstance(items_to_checkout, list):
-        return jsonify({"error": "Must provide items to checkout"}), 400
-    try:
-        result = CartService.checkout_cart(user_id=user_id, items_to_checkout=items_to_checkout)
-        return jsonify(result), 200
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": "Please provide items to checkout or enter 'all'"}), 400
+    if len(items_to_checkout) == 0:
+        return jsonify({"error": "Cart is empty"}), 400
+
+    # 執行結帳
+    result = CartService.checkout_cart(user_id=user_id, items_to_checkout=items_to_checkout)
+
+    # 日誌寫入
+    AuditService.log(
+        user_id=current_user,
+        action='checkout',  # 建議用 'checkout'
+        target_type='order',
+        target_id = result["order_id"],
+        description = f"Checkout order_id={result['order_id']}, total={result['total']}, items={items_to_checkout}"
+    )
+    return jsonify(result), 200

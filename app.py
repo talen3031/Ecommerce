@@ -1,12 +1,14 @@
-from flask import Flask
+from flask import Flask, jsonify
 from models import db
 from api.products import products_bp
 from api.users import users_bp
 from api.carts import carts_bp
 from api.orders import orders_bp
 from api.auth import auth_bp
+from exceptions import NotFoundError, DuplicateError, UnauthorizedError, ForbiddenError
 from flask_jwt_extended import JWTManager
 from flasgger import Swagger
+
 
 swagger_template = {
     "swagger": "2.0",
@@ -30,7 +32,7 @@ def create_app(test_config=None):
     app = Flask(__name__)
 
     # 預設用正式資料庫
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:talen168168@localhost:5432/Ecommerce'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:yourpassword@localhost:5432/databasename'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = 'w1235s1531ed3'
     Swagger(app, template=swagger_template)
@@ -41,7 +43,29 @@ def create_app(test_config=None):
         app.config.update(test_config)
 
     db.init_app(app)
+    
+    # ====== 全域 error handler 依 Exception 分類 ======
+    @app.errorhandler(DuplicateError)
+    def handle_duplicate_error(e):
+        return jsonify({"error": str(e)}), 409
 
+    @app.errorhandler(UnauthorizedError)
+    def handle_unauthorized_error(e):
+        return jsonify({"error": str(e)}), 401
+
+    @app.errorhandler(ForbiddenError)
+    def handle_forbidden_error(e):
+        return jsonify({"error": str(e)}), 403
+
+    @app.errorhandler(NotFoundError)
+    def handle_notfound_error(e):
+        return jsonify({"error": str(e)}), 404
+
+    @app.errorhandler(ValueError)
+    def handle_value_error(e):
+        return jsonify({"error": str(e)}), 400
+
+ 
     # 註冊 Blueprint
     app.register_blueprint(products_bp)
     app.register_blueprint(users_bp)

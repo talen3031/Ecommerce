@@ -1,9 +1,11 @@
 
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 from api.decorate import admin_required
 from models import db, Product  
 from service.product_service import ProductService
+from service.audit_service import AuditService
 
 """
 definitions:
@@ -74,7 +76,32 @@ def get_products():
     
 
     return jsonify(result)
+def get_products():
+    category_id = request.args.get('category_id', type=int)
+    keyword = request.args.get('keyword', type=str)
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
 
+    products_page = ProductService.search(
+        category_id = category_id, 
+        keyword=keyword, 
+        min_price=min_price, 
+        max_price=max_price,
+        page=page,
+        per_page=per_page
+    )
+    result = [product.to_dict() for product in products_page.items]
+
+    return jsonify({
+        "products": result,
+        "total": products_page.total,
+        "page": products_page.page,
+        "per_page": products_page.per_page,
+        "pages": products_page.pages
+    })
 # 查詢單一商品
 @products_bp.route('/<int:product_id>', methods=['GET'])
 def get_product(product_id):
@@ -175,17 +202,24 @@ def create_product():
     description = data.get('description', '')
     category_id = data.get('category_id')
     image = data.get('image', '')
-    try:
-      product = ProductService.create_product(
+    
+    product = ProductService.create_product(
           title=title,
           price=price,
           description=description,
           category_id=category_id,
           image=image
-      )
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-
+    )
+    
+    admin_id = get_jwt_identity()
+    #寫入日志
+    AuditService.log(
+        user_id= admin_id,
+        action='add',
+        target_type='product',
+        target_id=product.id,
+        description=f"Added product: {product.to_dict()}"
+    )
     return jsonify({"message": "Product created", "product_id": product.id})
 
 # 修改商品（全部覆蓋）
@@ -253,17 +287,37 @@ def update_product(product_id):
     description = data.get('description')
     category_id = data.get('category_id')
     image = data.get('image')
+  
+    # 取得修改前的資料（可選，方便比較差異）
+    old_product = Product.get_by_product_id(product_id)
+    old_data = old_product.to_dict() if old_product else {}
 
-    try:
-        product_update = ProductService.update_product(product_id=product_id,
-                            title=title, 
-                            price=price, 
-                            category_id=category_id,
-                            description=description, 
-                            image=image)
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 404
+    # 修改商品
+    product_update = ProductService.update_product(
+        product_id=product_id,
+        title=title, 
+        price=price, 
+        category_id=category_id,
+        description=description, 
+        image=image
+    )
 
+    # 取得操作者ID
+    admin_id = get_jwt_identity()
+
+    # 日誌內容
+    description_log = (
+        f"Before: {old_data}\nAfter: {product_update.to_dict()}"
+    )
+
+    # 寫入日誌
+    AuditService.log(
+        user_id = admin_id,
+        action = 'update',
+        target_type = 'product',
+        target_id = product_update.id,
+        description = description_log
+    )
     return jsonify({"message": "Product updated", "product_id": product_update.id})
 
 # 刪除商品
@@ -298,11 +352,19 @@ def delete_product(product_id):
         description: 商品不存在
     """
 
+    product = ProductService.delete_product(product_id)
     
-    try:
-        product = ProductService.delete_product(product_id)
+    admin_id = get_jwt_identity()
+
+     #寫入日志
+    AuditService.log(
+        user_id= admin_id,
+        action='delete',
+        target_type='product',
+        target_id=product.id,
+        description=f"update product: {product.to_dict()}"
+    )
         
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 404
+
     
     return jsonify({"message": "Product deleted", "product_id": product.id})

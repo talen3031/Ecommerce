@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import  jwt_required
 from models import db, User
 from service.user_service import UserService
+from service.audit_service import AuditService
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -68,20 +69,24 @@ def register():
     full_name = data.get('full_name',None) 
     address = data.get('address',None) 
     phone = data.get('phone',None) 
-    try:
-      user = UserService.create(username = username, 
-                            email = email, 
-                            password = password, 
-                            full_name = full_name, 
-                            address = address, 
-                            phone = phone, 
-                            role = role)
-    except ValueError as e:
-        # 檢查訊息內容決定 400 or 409
-        msg = str(e)
-        code = 409 if "already exists" in msg else 400
-        return jsonify({"error": msg}), code
     
+    user = UserService.create(
+    username=username, 
+    email=email, 
+    password=password, 
+    full_name=full_name, 
+    address=address, 
+    phone=phone, 
+    role=role
+    )
+   # 日誌紀錄（user.id已經產生，操作人即新用戶自己）
+    AuditService.log(
+        user_id=user.id,
+        action='register',
+        target_type='user',
+        target_id=user.id,
+        description=f"User registered: username={username}, email={email}"
+    )
     return jsonify({'message': 'Register success', 'user_id': user.id}), 201
 
 # 登入
@@ -140,13 +145,33 @@ def login():
     data = request.json
     username = data.get('username')
     password = data.get('password')
+
     if not username or not password:
         return jsonify({'error': 'Missing username or password'}), 400
+
     try:
         result = UserService.login(username, password)
+        # 登入成功日誌
+        AuditService.log(
+            user_id=result["user_id"],
+            action='login',
+            target_type='user',
+            target_id=result["user_id"],
+            description=f"User login success: username={username}"
+        )
         return jsonify(result), 200
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 401  # 401 Unauthorized
+
+    except Exception as e:
+        # 登入失敗日誌
+        user = User.get_by_username(username)
+        AuditService.log(
+            user_id=user.id if user else None,
+            action='login_fail',
+            target_type='user',
+            target_id=user.id if user else None,
+            description=f"User login failed: username={username}, error={str(e)}"
+        )
+        return jsonify({'error': str(e)}), 401
 # 登出
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()

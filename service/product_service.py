@@ -1,8 +1,9 @@
 from models import db, Product
+from exceptions import NotFoundError
 
 class ProductService:
     @staticmethod
-    def search(category_id=None, keyword=None, min_price=None, max_price=None):
+    def search(category_id=None, keyword=None, min_price=None, max_price=None, page=1, per_page=10):
         query = Product.query
         if category_id is not None:
             query = query.filter_by(category_id=category_id)
@@ -12,7 +13,7 @@ class ProductService:
             query = query.filter(Product.price >= min_price)
         if max_price is not None:
             query = query.filter(Product.price <= max_price)
-        return query.all()
+        return query.paginate(page=page, per_page=per_page, error_out=False)
     
     @staticmethod
     def create_product(title, price, category_id, description=None, image=None):
@@ -35,7 +36,7 @@ class ProductService:
     def update_product(product_id, title, price, category_id, description, image):
         product = Product.get_by_product_id(product_id)
         if not product:
-            raise ValueError("product not found")
+            raise NotFoundError("product not found")
         if title:
             product.title = title
         if price:
@@ -53,7 +54,7 @@ class ProductService:
     def delete_product(product_id):
         product = Product.get_by_product_id(product_id)
         if not product:
-            raise ValueError("product not found")
+            raise NotFoundError("product not found")
         db.session.delete(product)
         db.session.commit()
         return product

@@ -1,7 +1,10 @@
 from models import db, Cart, CartItem, Product,Order,OrderItem
 from datetime import datetime
+from exceptions import NotFoundError
+from service.audit_service import AuditService
 
 class CartService:
+
     @staticmethod
     def get_cart(user_id):
         """
@@ -19,14 +22,9 @@ class CartService:
                 "price": float(item.product.price) if item.product and item.product.price else 0.0,
                 "quantity": item.quantity
             })
-
-        return {
-            "cart_id": cart.id,
-            "user_id": cart.user_id,
-            "created_at": cart.created_at.isoformat() if cart.created_at else None,
-            "status": cart.status,
-            "items": items
-        }
+        res = cart.to_dict() 
+        res["items"] = items
+        return res
     
     @staticmethod
     def add_to_cart(user_id, product_id, quantity=1):
@@ -38,9 +36,9 @@ class CartService:
             db.session.commit()
 
         # 2. 檢查商品是否存在
-        product = Product.query.get(product_id)
+        product = Product.get_by_product_id(product_id)
         if not product:
-            raise ValueError("Product not found")
+            raise NotFoundError("Product not found")
 
         # 3. 查詢該商品是否已在購物車
         cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
@@ -57,7 +55,7 @@ class CartService:
         # 1. 找到該用戶 active 購物車
         cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
         if not cart:
-            raise ValueError("No active cart found")
+            raise NotFoundError("No active cart found")
         # 2. 找到該商品在購物車的 cart_item
         cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
         if not cart_item:
@@ -73,27 +71,62 @@ class CartService:
         # 1. 找到該用戶 active 購物車
         cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
         if not cart:
-            raise ValueError("No active cart found")
+            raise NotFoundError("No active cart found")
         # 2. 找到該商品在購物車的 cart_item
         cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
         if not cart_item:
             raise ValueError("Product not in cart")
+        old_qty = cart_item.quantity
+        if old_qty==quantity:
+            raise ValueError(f"quantity is already {quantity}")
         cart_item.quantity = quantity
         db.session.commit()
-        return cart_item
+        return cart_item,old_qty
+
     @staticmethod
-    def checkout_cart(user_id, items_to_checkout):  
-        """
-        將購物車商品結帳為訂單，items_to_checkout: [{"product_id": x, "quantity": y}, ...]
-        """
+    def checkout_cart(user_id, items_to_checkout):
         if not items_to_checkout or not isinstance(items_to_checkout, list):
             raise ValueError("Must provide items to checkout")
+        # validate user cart == 'active'
+        cart = CartService._get_active_cart(user_id)
+        # validate cart_item compare to the items_to_checkout
+        CartService._validate_cart_items(cart, items_to_checkout)
 
+        order = CartService._create_order(user_id)
+        total = 0
+
+        for item in items_to_checkout:
+            product_id = item.get("product_id")
+            quantity = item.get("quantity", 1)
+            product = db.session.get(Product, product_id)
+            price = float(product.price) if product else 0
+            total += price * quantity
+            #add  order item
+            CartService._add_order_item(order.id, product_id, quantity, price)
+            # handle rest of cart_item
+            CartService._handle_cart_item_on_checkout(user_id, cart, product_id, quantity)
+
+        order.total = total
+        #if cart become empty set cart status = check_out
+        message = CartService._update_cart_status_if_empty(user_id, cart)
+
+        db.session.commit()
+
+        return {
+            "message": message,
+            "order_id": order.id,
+            "total": float(total)
+        }
+    
+    @staticmethod
+    def _get_active_cart(user_id):
         cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
         if not cart:
             raise ValueError("No active cart to checkout")
+        return cart
 
-        # 驗證每個商品與數量
+    @staticmethod
+    def _validate_cart_items(cart, items_to_checkout):
         for item in items_to_checkout:
             product_id = item.get("product_id")
             quantity = item.get("quantity", 1)
@@ -101,35 +134,52 @@ class CartService:
             if not cart_item or quantity > cart_item.quantity:
                 raise ValueError(f"Product {product_id} quantity not enough in cart")
 
-        # 建立訂單
+    @staticmethod
+    def _create_order(user_id):
         order = Order(user_id=user_id, order_date=datetime.now(), total=0, status='pending')
         db.session.add(order)
         db.session.flush()  # 先獲得 order.id
+        return order
 
-        total = 0
-        for item in items_to_checkout:
-            product_id = item.get("product_id")
-            quantity = item.get("quantity", 1)
-            product = db.session.get(Product, product_id)
-            price = float(product.price) if product else 0
-            total += price * quantity
-            order_item = OrderItem(order_id=order.id, product_id=product_id, quantity=quantity, price=price)
-            db.session.add(order_item)
-            # 從購物車扣除數量
-            cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
-            if cart_item.quantity == quantity:
-                db.session.delete(cart_item)
-            else:
-                cart_item.quantity -= quantity
+    @staticmethod
+    def _add_order_item(order_id, product_id, quantity, price):
+        order_item = OrderItem(order_id=order_id, product_id=product_id, quantity=quantity, price=price)
+        db.session.add(order_item)
 
-        order.total = total
-        # 如果購物車已經沒有商品，就將狀態設為 checked_out
+    @staticmethod
+    def _handle_cart_item_on_checkout(user_id, cart, product_id, quantity):
+        cart_item = CartItem.query.filter_by(cart_id=cart.id, product_id=product_id).first()
+        old_quantity = cart_item.quantity
+        if old_quantity == quantity:
+            db.session.delete(cart_item)
+            action = "remove_from_cart_on_checkout"
+            desc = f"Removed product_id={product_id} from cart_id={cart.id} during checkout (qty={quantity})"
+        else:
+            cart_item.quantity -= quantity
+            action = "update_cart_item_on_checkout"
+            desc = f"Decreased product_id={product_id} in cart_id={cart.id} from {old_quantity} to {cart_item.quantity} during checkout"
+        
+        #write to audit_log
+        AuditService.log(
+            user_id=user_id,
+            action=action,
+            target_type="cart_item",
+            target_id=cart_item.id,
+            description=desc
+        )
+
+    @staticmethod
+    def _update_cart_status_if_empty(user_id, cart):
         if len(cart.cart_items) == 0:
             cart.status = 'checked_out'
-
-        db.session.commit()
-        return {
-            "message": "Partial checkout success",
-            "order_id": order.id,
-            "total": float(total)
-        }
+            #write to audit_log
+            AuditService.log(
+                user_id=user_id,
+                action="cart_checked_out",
+                target_type="cart",
+                target_id=cart.id,
+                description=f"Cart {cart.id} status changed to checked_out after checkout"
+            )
+            return "all checkout success"
+        else:
+            return "partial checkout success"

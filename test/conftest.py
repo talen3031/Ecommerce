@@ -14,6 +14,7 @@ def app():
         'JWT_SECRET_KEY': 'testkey',
     })
     with app.app_context():
+        #根據models.py建立
         db.create_all()
         yield app
         db.session.remove()

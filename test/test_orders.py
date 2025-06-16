@@ -33,6 +33,7 @@ def test_order_flow(client, user_token_and_id):
     # 購物車加商品 & 結帳
     client.post(f'/cart/{user_id}/add', json={'product_id': 1, 'quantity': 1},
                 headers={'Authorization': f'Bearer {token}'})
+
     res = client.post(f'/cart/{user_id}/checkout',
                       json={'items': [{'product_id': 1, 'quantity': 1}]},
                       headers={'Authorization': f'Bearer {token}'})
@@ -42,8 +43,12 @@ def test_order_flow(client, user_token_and_id):
     # 查詢歷史訂單
     res = client.get(f'/orders/{user_id}', headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 200
-    orders = res.get_json()
-    assert any(order['order_id'] == order_id for order in orders)
+    result = res.get_json()
+    orders = result['orders']
+    assert len(orders) > 0
+    order = orders[0]
+    assert order['id'] == order_id
+
 
     # 查詢訂單明細
     res = client.get(f'/orders/order/{order_id}', headers={'Authorization': f'Bearer {token}'})
@@ -60,4 +65,4 @@ def test_order_flow(client, user_token_and_id):
     # 取消訂單（應該只允許 pending 狀態時成功，這裡測試已 paid 應失敗）
     res = client.post(f'/orders/{order_id}/cancel', headers={'Authorization': f'Bearer {token}'})
     # 若已 paid 應該回 400
-    assert res.status_code in (200, 400)
+    assert res.status_code == 400

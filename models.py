@@ -146,18 +146,38 @@ class OrderItem(db.Model):
         db.UniqueConstraint('order_id', 'product_id', name='unique_order_product'),
     )
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "product_id": self.product_id,
+            "quantity": self.quantity,
+            "price": float(self.price) if self.price else 0.0,
+        }
+    
     @classmethod
     def get_by_order_id(cls, order_id):
         return cls.query.filter_by(order_id=order_id).all()
     
-
+CART_STATUS=[
+    "active",
+    "checked_out"
+]
 class Cart(db.Model):
     __tablename__ = 'carts'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     created_at = db.Column(db.DateTime)
-    status = db.Column(db.String(50), default='active')
+    status = db.Column(Enum(*CART_STATUS, name="cart_status_enum"), default='active', nullable=False)
     user = db.relationship('User', backref=db.backref('carts', lazy=True))
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "status": self.status,
+        }
 
 class CartItem(db.Model):
     __tablename__ = 'cart_items'
@@ -170,3 +190,22 @@ class CartItem(db.Model):
     __table_args__ = (
         db.UniqueConstraint('cart_id', 'product_id', name='unique_cart_product'),
     )
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "cart_id": self.cart_id,
+            "product_id": self.product_id ,
+            "quantity": self.quantity,
+        }
+    
+class AuditLog(db.Model):
+    __tablename__ = 'audit_logs'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    action = db.Column(db.String(50), nullable=False) # 'add', 'delete', 'update'
+    target_type = db.Column(db.String(50), nullable=False) # 'product', 'user', ...
+    target_id = db.Column(db.Integer, nullable=True) # ex: product_id
+    description = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+
+    user = db.relationship('User')

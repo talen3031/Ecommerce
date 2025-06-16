@@ -70,3 +70,14 @@ CREATE TABLE cart_items (
     quantity INTEGER NOT NULL DEFAULT 1,
     CONSTRAINT unique_cart_product UNIQUE (cart_id, product_id)
 );
+-- AuditLog
+CREATE TABLE audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    action VARCHAR(50) NOT NULL,         -- 操作類型: 'add', 'delete', 'update'
+    target_type VARCHAR(50) NOT NULL,    -- 目標類型: 'product', 'user', ...
+    target_id INTEGER,                   -- 目標ID，例如 product_id
+    description TEXT,                    -- 操作說明
+    created_at TIMESTAMP DEFAULT NOW(),  -- 操作時間
+    CONSTRAINT fk_auditlog_user FOREIGN KEY(user_id) REFERENCES users(id)
+);
