@@ -13,10 +13,11 @@ def setup_category(app):
     if not Category.query.filter_by(id=1).first():
         db.session.add(Category(id=1, name='default', description='for test'))
         db.session.commit()
+
 @pytest.fixture
 def admin_token(client):
     # 註冊管理員帳號
-    res = client.post('/register', json={
+    res = client.post('/auth/register', json={
         'username': 'admin',
         'email': 'admin@example.com',
         'password': 'admin123'
@@ -26,7 +27,7 @@ def admin_token(client):
     user.role = 'admin'
     db.session.commit()
     # 登入拿 token
-    res = client.post('/login', json={
+    res = client.post('/auth/login', json={
         'username': 'admin',
         'password': 'admin123'
     })
@@ -58,7 +59,8 @@ def test_create_get_update_delete_product(client, admin_token):
     # --- 查詢全部商品 ---
     res = client.get('/products')
     assert res.status_code == 200
-    products = res.get_json()
+    res = res.get_json()
+    products = res['products']
     for p in products:
         assert p['id'] == product_id
 

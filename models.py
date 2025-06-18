@@ -207,5 +207,23 @@ class AuditLog(db.Model):
     target_id = db.Column(db.Integer, nullable=True) # ex: product_id
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=db.func.now())
-
     user = db.relationship('User')
+
+
+class PasswordResetToken(db.Model):
+    __tablename__ = "password_reset_tokens"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    token = db.Column(db.String(128), unique=True, nullable=False)
+    expire_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+    
+    @classmethod
+    def get_by_token(cls, token):
+        return cls.query.filter_by(token=token, used=False).first()
+    
+    #找到該user最新的token
+    @classmethod
+    def get_user_newest_token(cls, user_id):
+        return cls.query.filter_by(user_id=user_id).order_by(cls.id.desc()).first()

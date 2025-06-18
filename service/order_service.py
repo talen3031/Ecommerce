@@ -33,6 +33,7 @@ class OrderService:
         order = Order.query.filter_by(id=order_id).first()
         if not order:
             raise NotFoundError("Order not found")
+    
         # 組合 items 清單
         items = []
         for item in order.order_items:

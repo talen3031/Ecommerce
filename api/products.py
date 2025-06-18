@@ -65,23 +65,6 @@ def get_products():
     min_price = request.args.get('min_price', type=float)
     max_price = request.args.get('max_price', type=float)
     
-    products = ProductService.search(
-        category_id = category_id, 
-        keyword = keyword, 
-        min_price = min_price, 
-        max_price = max_price
-    )
-
-    result =[ product.to_dict() for product in products ] 
-    
-
-    return jsonify(result)
-def get_products():
-    category_id = request.args.get('category_id', type=int)
-    keyword = request.args.get('keyword', type=str)
-    min_price = request.args.get('min_price', type=float)
-    max_price = request.args.get('max_price', type=float)
-    
     page = request.args.get('page', default=1, type=int)
     per_page = request.args.get('per_page', default=10, type=int)
 
@@ -102,6 +85,7 @@ def get_products():
         "per_page": products_page.per_page,
         "pages": products_page.pages
     })
+    
 # 查詢單一商品
 @products_bp.route('/<int:product_id>', methods=['GET'])
 def get_product(product_id):

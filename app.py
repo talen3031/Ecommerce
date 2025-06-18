@@ -8,7 +8,7 @@ from api.auth import auth_bp
 from exceptions import NotFoundError, DuplicateError, UnauthorizedError, ForbiddenError
 from flask_jwt_extended import JWTManager
 from flasgger import Swagger
-
+from flask_cors import CORS
 
 swagger_template = {
     "swagger": "2.0",
@@ -30,9 +30,9 @@ swagger_template = {
 
 def create_app(test_config=None):
     app = Flask(__name__)
-
+    CORS(app, supports_credentials=True)
     # 預設用正式資料庫
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:yourpassword@localhost:5432/databasename'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:talen168168@localhost:5432/Ecommerce'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = 'w1235s1531ed3'
     Swagger(app, template=swagger_template)

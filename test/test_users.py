@@ -8,14 +8,14 @@ from models import db,User,Category
 
 def test_get_user(client):
     # 先註冊
-    res = client.post('/register', json={
+    res = client.post('/auth/register', json={
         'username': 'pytest',
         'email': 'pytest@example.com',
         'password': '123456'
     })
     user_id = res.get_json()['user_id']
     # 登入拿 token
-    res = client.post('/login', json={
+    res = client.post('/auth/login', json={
         'username': 'pytest',
         'password': '123456'
     })
