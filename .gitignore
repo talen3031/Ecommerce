@@ -5,6 +5,10 @@ frontend/build/
 # 後端忽略
 backend/venv/
 backend/__pycache__/
+backend/api/__pycache__/
+backend/service/__pycache__/
+backend/test/__pycache__/
+
 backend/*.pyc
 backend/.ipynb_checkpoints
 
