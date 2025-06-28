@@ -1,0 +1,10 @@
+flask
+flask-cors
+requests
+psycopg2
+flask-jwt-extended
+werkzeug 
+flask-jwt-extended
+sqlalchemy
+flask-sqlalchemy
+flasgger
