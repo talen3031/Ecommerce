@@ -132,6 +132,7 @@ class ProductService:
             .all()
         )
         return products
+    
     #根據購物車
     @staticmethod
     def recommend_for_cart(user_id, limit=5):
@@ -173,7 +174,7 @@ class ProductService:
         )
         return products
     
-    #協同過濾
+    #協同過濾(有買過你購物車內商品的人，還常常一起買哪些商品)
     @staticmethod
     def recommend_for_cart_collaborative(user_id, limit=5):
         # 1. 取得購物車內商品 id

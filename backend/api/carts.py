@@ -7,7 +7,7 @@ from service.audit_service import AuditService
 from service.product_service import ProductService
 
 
-carts_bp = Blueprint('carts', __name__, url_prefix='/cart')
+carts_bp = Blueprint('carts', __name__, url_prefix='/carts')
 #查詢購物車
 @carts_bp.route('/<int:user_id>', methods=['GET'])
 @jwt_required()
@@ -79,7 +79,7 @@ def get_cart(user_id):
     return jsonify(cart)
 
 #加入商品至購物車
-@carts_bp.route('/<int:user_id>/add', methods=['POST'])
+@carts_bp.route('/<int:user_id>', methods=['POST'])
 @jwt_required()
 def add_to_cart(user_id):
     """
@@ -157,7 +157,7 @@ def add_to_cart(user_id):
 
 
 #從購物車移除商品
-@carts_bp.route('/<int:user_id>/remove', methods=['DELETE'])
+@carts_bp.route('/<int:user_id>', methods=['DELETE'])
 @jwt_required()
 def remove_from_cart(user_id):
     """
@@ -242,7 +242,7 @@ def remove_from_cart(user_id):
     
 
 # 調整購物車內商品數量
-@carts_bp.route('/<int:user_id>/update', methods=['PUT'])
+@carts_bp.route('/<int:user_id>', methods=['PUT'])
 @jwt_required()
 def update_cart_item(user_id):
     """
@@ -453,7 +453,7 @@ def checkout_cart(user_id):
 @jwt_required()
 def recommend_for_cart(user_id):
     """
-    根據購物車內容推薦商品
+    個人化推薦（依購物車內容 推薦同類別的熱賣商品）
     ---
     tags:
       - carts

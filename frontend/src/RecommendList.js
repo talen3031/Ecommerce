@@ -16,7 +16,7 @@ function RecommendList({ userId, mode = "cart", limit = 5 }) {
     } else if (mode === "collaborative") {
       url = `/cart/${userId}/recommend/collaborative?limit=${limit}`;
     } else if (mode === "user") {
-      url = `/products/user/${userId}/recommend?limit=${limit}`;
+      url = `/users/${userId}/recommend?limit=${limit}`;
     }
     api.get(url)
       .then(res => setProducts(res.data || []))

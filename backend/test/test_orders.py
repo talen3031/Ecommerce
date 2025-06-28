@@ -31,10 +31,10 @@ def test_order_flow(client, user_token_and_id):
     token, user_id = user_token_and_id
 
     # 購物車加商品 & 結帳
-    client.post(f'/cart/{user_id}/add', json={'product_id': 1, 'quantity': 1},
+    client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 1},
                 headers={'Authorization': f'Bearer {token}'})
 
-    res = client.post(f'/cart/{user_id}/checkout',
+    res = client.post(f'/carts/{user_id}/checkout',
                       json={'items': [{'product_id': 1, 'quantity': 1}]},
                       headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 200

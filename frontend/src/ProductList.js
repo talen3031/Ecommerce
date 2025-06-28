@@ -91,7 +91,7 @@ function ProductList() {
     const quantity = cartQuantity[productId] || 1;
     setCartLoading(loading => ({ ...loading, [productId]: true }));
     try {
-      await api.post(`/cart/${userId}/add`, {
+      await api.post(`/carts/${userId}`, {
         product_id: productId,
         quantity,
       });

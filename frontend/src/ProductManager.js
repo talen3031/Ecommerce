@@ -51,7 +51,7 @@ function ProductManager() {
         await api.put(`/products/${editing.id}`, values);
         message.success("已更新商品！");
       } else {
-        await api.post("/products/add", values);
+        await api.post("/products", values);
         message.success("已新增商品！");
       }
       setModalOpen(false);

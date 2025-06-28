@@ -18,7 +18,7 @@ function CartList() {
     }
     setLoading(true);
     try {
-      const res = await api.get(`/cart/${userId}`);
+      const res = await api.get(`/carts/${userId}`);
       setCart(res.data);
     } catch (err) {
       message.error("取得購物車失敗");
@@ -35,7 +35,7 @@ function CartList() {
   const updateQuantity = async (product_id, quantity) => {
     setItemUpdating(u => ({ ...u, [product_id]: true }));
     try {
-      await api.put(`/cart/${userId}/update`, { product_id, quantity });
+      await api.put(`/carts/${userId}`, { product_id, quantity });
       message.success("已更新數量");
       fetchCart();
     } catch (err) {
@@ -48,7 +48,7 @@ function CartList() {
   const removeItem = async (product_id) => {
     setItemUpdating(u => ({ ...u, [product_id]: true }));
     try {
-      await api.delete(`/cart/${userId}/remove`, { data: { product_id } });
+      await api.delete(`/carts/${userId}`, { data: { product_id } });
       message.success("已移除商品");
       fetchCart();
     } catch (err) {
@@ -68,7 +68,7 @@ function CartList() {
         product_id: item.product_id,
         quantity: item.quantity
       }));
-      const res = await api.post(`/cart/${userId}/checkout`, { items });
+      const res = await api.post(`/carts/${userId}/checkout`, { items });
       message.success(`結帳成功，訂單號：${res.data.order_id}`);
       fetchCart();
     } catch (err) {

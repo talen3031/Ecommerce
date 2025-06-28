@@ -33,51 +33,51 @@ def test_cart_crud_flow(client, user_token_and_id):
     token, user_id = user_token_and_id
 
     # 查詢空購物車
-    res = client.get(f'/cart/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 200
     assert res.get_json()['items'] == []
 
     # 加商品到購物車
-    res = client.post(f'/cart/{user_id}/add', json={'product_id': 1, 'quantity': 2},
+    res = client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 2},
                       headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 200
     cart_id = res.get_json()['cart_id']
 
     # 查詢購物車內容
-    res = client.get(f'/cart/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 200
     items = res.get_json()['items']
     assert len(items) == 1 and items[0]['product_id'] == 1 and items[0]['quantity'] == 2
 
     # 調整購物車商品數量
-    res = client.put(f'/cart/{user_id}/update', json={'product_id': 1, 'quantity': 5},
+    res = client.put(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 5},
                      headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 200
-    res = client.get(f'/cart/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
     assert res.get_json()['items'][0]['quantity'] == 5
 
     # 刪除購物車商品
-    res = client.delete(f'/cart/{user_id}/remove', json={'product_id': 1},
+    res = client.delete(f'/carts/{user_id}', json={'product_id': 1},
                         headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 200
-    res = client.get(f'/cart/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
     assert res.get_json()['items'] == []
 
 def test_cart_checkout(client, user_token_and_id):
     token, user_id = user_token_and_id
 
     # 先加商品
-    client.post(f'/cart/{user_id}/add', json={'product_id': 1, 'quantity': 2},
+    client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 2},
                 headers={'Authorization': f'Bearer {token}'})
 
     # 正常結帳
-    res = client.post(f'/cart/{user_id}/checkout',
+    res = client.post(f'/carts/{user_id}/checkout',
                       json={'items': [{'product_id': 1, 'quantity': 2}]},
                       headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 200
     assert 'order_id' in res.get_json()
 
     # 再查購物車，應該已空（或 checked_out 狀態）
-    res = client.get(f'/cart/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
     # checked_out後 items應該是空的
     assert res.get_json()['items'] == []

@@ -35,7 +35,7 @@ def admin_token(client):
 
 def test_create_get_update_delete_product(client, admin_token):
     # --- 新增商品 ---
-    res = client.post('/products/add', 
+    res = client.post('/products', 
                       json={
                           'title': 'iPhone 99',
                           'price': 9999,
@@ -65,7 +65,7 @@ def test_create_get_update_delete_product(client, admin_token):
         assert p['id'] == product_id
 
     # --- 修改商品 ---
-    res = client.put(f'/products/update/{product_id}',
+    res = client.put(f'/products/{product_id}',
                      json={
                          'title': 'iPhone 99 Pro',
                          'price': 19999,
@@ -80,7 +80,7 @@ def test_create_get_update_delete_product(client, admin_token):
     assert res.get_json()['title'] == 'iPhone 99 Pro'
 
     # --- 刪除商品 ---
-    res = client.delete(f'/products/delete/{product_id}',
+    res = client.delete(f'/products/{product_id}',
                         headers={'Authorization': f'Bearer {admin_token}'})
     assert res.status_code == 200
     # 查驗證已刪除
@@ -89,22 +89,22 @@ def test_create_get_update_delete_product(client, admin_token):
 
 def test_create_product_permission(client):
     # 沒帶 token 無法新增商品
-    res = client.post('/products/add', 
+    res = client.post('/products', 
                       json={'title': 'nope', 'price': 1, 'category_id': 1})
     assert res.status_code == 401  # 未授權
 
 def test_update_delete_permission(client, admin_token):
     # 先新增一個商品
-    res = client.post('/products/add', 
+    res = client.post('/products', 
                       json={'title': 'temp', 'price': 1, 'category_id': 1},
                       headers={'Authorization': f'Bearer {admin_token}'})
     product_id = res.get_json()['product_id']
 
     # 不帶 token 不能改
-    res = client.put(f'/products/update/{product_id}',
+    res = client.put(f'/products/{product_id}',
                      json={'title': 'hack', 'price': 1, 'category_id': 1})
     assert res.status_code == 401
 
     # 不帶 token 不能刪
-    res = client.delete(f'/products/delete/{product_id}')
+    res = client.delete(f'/products/{product_id}')
     assert res.status_code == 401

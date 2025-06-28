@@ -129,7 +129,7 @@ def get_product(product_id):
         return jsonify({"error": "Product not found"}), 404
 
 # 新增商品
-@products_bp.route('/add', methods=['POST'])
+@products_bp.route('', methods=['POST'])
 @admin_required
 def create_product():
     """
@@ -144,7 +144,7 @@ def create_product():
         name: body
         required: true
         schema:
-          id: ProductCreate
+          type: object
           required:
             - title
             - price
@@ -169,6 +169,7 @@ def create_product():
       200:
         description: 建立成功
         schema:
+          type: object
           properties:
             message:
               type: string
@@ -178,6 +179,20 @@ def create_product():
               example: 3
       400:
         description: 輸入資料缺漏或錯誤
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "title, price, category_id are required"
+      401:
+        description: 權限不足
+        schema:
+          type: object
+          properties:
+            error:
+              type: string
+              example: "Unauthorized"
     """
    
     data = request.json
@@ -421,67 +436,4 @@ def add_product_sale(product_id):
    
     return jsonify({"message": "Sale created", "sale_id": sale.id})
 
-# products.py
-@products_bp.route('/user/<int:user_id>/recommend', methods=['GET'])
-@jwt_required()
-def recommend_for_user(user_id):
-    """
-    個人化推薦（依購買紀錄）
-    ---
-    tags:
-      - products
-    parameters:
-      - in: path
-        name: user_id
-        type: integer
-        required: true
-        description: 用戶ID
-      - in: query
-        name: limit
-        type: integer
-        required: false
-        description: 推薦幾個商品，預設5
-    responses:
-      200:
-        description: 推薦商品列表
-        schema:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-                example: 1
-              title:
-                type: string
-                example: "iPhone 99"
-              price:
-                type: number
-                example: 9999
-              description:
-                type: string
-                example: "旗艦手機"
-              category_id:
-                type: integer
-                example: 1
-              image:
-                type: string
-                example: "http://img"
-      403:
-        description: 權限不足
-        schema:
-          type: object
-          properties:
-            error:
-              type: string
-              example: "Permission denied"
-    """
 
-    # 僅允許本人查詢
-    current_user = get_jwt_identity()
-    if int(current_user) != user_id:
-        return jsonify({"error": "Permission denied"}), 403
-
-    limit = request.args.get('limit', 5, type=int)
-    products = ProductService.recommend_for_user(user_id, limit)
-    return jsonify([p.to_dict() for p in products])
