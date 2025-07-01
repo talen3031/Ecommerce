@@ -1,5 +1,6 @@
 from models import db, Order,Product
 from exceptions import NotFoundError
+from utils.notify_util import notify_user_order_status
 class OrderService:
     @staticmethod
     def create(user_id, order_date, total=0, status='pending'):

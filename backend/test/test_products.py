@@ -41,7 +41,7 @@ def test_create_get_update_delete_product(client, admin_token):
                           'price': 9999,
                           'description': 'The best phone',
                           'category_id': 1,
-                          'image': 'http://image'
+                          'images': ['http://image1','http://image2']
                       },
                       headers={'Authorization': f'Bearer {admin_token}'})
     
@@ -71,7 +71,7 @@ def test_create_get_update_delete_product(client, admin_token):
                          'price': 19999,
                          'description': 'Updated phone',
                          'category_id': 1,
-                         'image': 'http://image_new'
+                         'images': ['http://image_new1','http://image_new2']
                      },
                      headers={'Authorization': f'Bearer {admin_token}'})
     assert res.status_code == 200

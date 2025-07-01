@@ -24,9 +24,9 @@ definitions:
       description:
         type: string
         example: "旗艦手機"
-      image:
+      images:
         type: string
-        example: "http://img"
+        example: ["https://img1.jpg", "https://img2.jpg"]
       category_id:
         type: integer
         example: 1
@@ -162,9 +162,9 @@ def create_product():
             category_id:
               type: integer
               example: 1
-            image:
+            images:
               type: string
-              example: "http://example.com/img.jpg"
+              example: ["https://img1.jpg", "https://img2.jpg"]
     responses:
       200:
         description: 建立成功
@@ -200,14 +200,14 @@ def create_product():
     price = data.get('price')
     description = data.get('description', '')
     category_id = data.get('category_id')
-    image = data.get('image', '')
+    images = data.get('images', [])
     
     product = ProductService.create_product(
           title=title,
           price=price,
           description=description,
           category_id=category_id,
-          image=image
+          images=images
     )
     
     admin_id = get_jwt_identity()
@@ -260,9 +260,9 @@ def update_product(product_id):
             category_id:
               type: integer
               example: 2
-            image:
+            images:
               type: string
-              example: "http://example.com/pro.jpg"
+              example: ["https://img1.jpg", "https://img2.jpg"]
     responses:
       200:
         description: 修改成功
@@ -285,8 +285,7 @@ def update_product(product_id):
     price = data.get('price')
     description = data.get('description')
     category_id = data.get('category_id')
-    image = data.get('image')
-  
+    images = data.get('images', None)
     # 取得修改前的資料（可選，方便比較差異）
     old_product = Product.get_by_product_id(product_id)
     old_data = old_product.to_dict() if old_product else {}
@@ -298,7 +297,7 @@ def update_product(product_id):
         price=price, 
         category_id=category_id,
         description=description, 
-        image=image
+        images = images
     )
 
     # 取得操作者ID

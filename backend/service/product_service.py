@@ -14,10 +14,13 @@ class ProductService:
             query = query.filter(Product.price >= min_price)
         if max_price is not None:
             query = query.filter(Product.price <= max_price)
+
+        query =query.order_by(Product.id)
+        
         return query.paginate(page=page, per_page=per_page, error_out=False)
     
     @staticmethod
-    def create_product(title, price, category_id, description=None, image=None):
+    def create_product(title, price, category_id, description=None, images=None):
             
         if not title or price is None or not category_id:
             raise ValueError('title, price, category_id are required')
@@ -27,14 +30,14 @@ class ProductService:
             price=price,
             description=description,
             category_id=category_id,
-            image=image
+            images=images or []
         )
         db.session.add(product)
         db.session.commit()
         return product
 
     @staticmethod
-    def update_product(product_id, title, price, category_id, description, image):
+    def update_product(product_id, title, price, category_id, description, images):
         product = Product.get_by_product_id(product_id)
         if not product:
             raise NotFoundError("product not found")
@@ -46,8 +49,8 @@ class ProductService:
             product.description = description
         if category_id:
             product.category_id = category_id
-        if image:
-            product.image = image
+        if images is not None:
+            product.images = images
         db.session.commit()
         return product
 

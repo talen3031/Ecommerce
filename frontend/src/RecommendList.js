@@ -37,7 +37,7 @@ function RecommendList({ userId, mode = "cart", limit = 5 }) {
                 hoverable
                 cover={
                   <img
-                    src={product.image}
+                    src={product.images[0]}
                     alt={product.title}
                     style={{ height: 120, objectFit: "cover" }}
                   />

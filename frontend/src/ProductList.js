@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Table, Pagination, Spin, Input, Button, Space, InputNumber, Select, Row, Col, message,Image } from "antd";
 import api from "./api";
 import RecommendList from "./RecommendList";
+
+
 const categoryOptions = [
   { label: "全部", value: "" },
   { label: "3C", value: 1 },
@@ -11,7 +13,7 @@ const categoryOptions = [
 ];
 const categoryMap = Object.fromEntries(categoryOptions.map(opt => [opt.value, opt.label]));
 
-function ProductList() {
+function ProductList({ onSelectProduct }) {
   const [products, setProducts] = useState([]);
   const [pageInfo, setPageInfo] = useState({ page: 1, pages: 1, total: 0, per_page: 10 });
   const [loading, setLoading] = useState(false);
@@ -104,23 +106,36 @@ function ProductList() {
 
   const columns = [
     {
-    title: "圖片",
-    dataIndex: "image",
-    render: (value) =>
-      value ? (
-        <Image
-          src={value}
-          width={50}
-          height={50}
-          style={{ objectFit: "cover", borderRadius: 8 }}
-          alt="商品圖"
-          fallback="https://via.placeholder.com/60x60?text=No+Image"
-        />
-      ) : (
-        <span style={{ color: "#bbb" }}>無圖</span>
-      ),
+      title: "圖片",
+      dataIndex: "images",
+      render: (images) => {
+        if (!images || images.length === 0) return <span style={{ color: "#bbb" }}>無圖</span>;
+        // 顯示前1~3張（可依需求調整）
+        return (
+          <span>
+            {images.slice(0, 1).map((url, idx) => (
+              <img
+                key={idx}
+                src={url}
+                width={60}
+                height={60}
+                alt={`商品圖${idx + 1}`}
+                style={{ objectFit: "cover", borderRadius: 8, marginRight: 4 }}
+              />
+            ))}
+          </span>
+        );
+      }
     },
-    { title: '名稱', dataIndex: 'title', sorter: true },
+
+    { title: '名稱', 
+      dataIndex: 'title', 
+      sorter: true ,
+        render: (value, record) => (
+        <a style={{ cursor: "pointer" }} onClick={() => onSelectProduct(record.id)}>
+          {value}
+        </a>)
+    },
      // 原價：特價時顯示刪除線
     {
       title: "原價",

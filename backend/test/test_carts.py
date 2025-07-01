@@ -12,7 +12,7 @@ def setup_products(app):
     # 建立預設分類和商品，確保有 id=1
     if not Category.query.filter_by(id=1).first():
         db.session.add(Category(id=1, name='cat1', description='for test'))
-    db.session.add(Product(title='Test Product', price=100, description='desc', category_id=1, image='img'))
+    db.session.add(Product(title='Test Product', price=100, description='desc', category_id=1, images=['img1','img2']))
     db.session.commit()
 
 @pytest.fixture
@@ -86,7 +86,7 @@ def test_cart_content_recommend(client, user_token_and_id):
 
     # 建立新商品同分類，並假設 p2 熱賣（有訂單數紀錄）
     hot_title = f'Hot Product for user {user_id}'
-    p2 = Product(title=hot_title, price = 200, description='Hot', category_id=1, image='img2')
+    p2 = Product(title=hot_title, price = 200, description='Hot', category_id=1, images=['img2-1','img2-2'])
     db.session.add(p2)
     db.session.commit()
     
@@ -118,7 +118,7 @@ def test_cart_collaborative_recommend(client, user_token_and_id):
 
     # 建立唯一名稱商品
     collab_title = f'Collab_Product for user {user_id}'
-    p3 = Product(title=collab_title, price=300, description='collab', category_id=1, image='img3')
+    p3 = Product(title=collab_title, price=300, description='collab', category_id=1, images=['img3-1','img3-2'])
     db.session.add(p3)
     db.session.commit()
 

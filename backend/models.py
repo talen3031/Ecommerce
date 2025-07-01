@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Enum
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from sqlalchemy.dialects.postgresql import JSONB
 
 db = SQLAlchemy()
 
@@ -18,7 +19,7 @@ class Product(db.Model):
     price = db.Column(db.Numeric, nullable=False)
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
-    image = db.Column(db.String(255))
+    images = db.Column(JSONB)
     category = db.relationship('Category', backref=db.backref('products', lazy=True))
     __table_args__ = (
         db.UniqueConstraint('title', 'category_id', name='unique_product_title_category'),
@@ -81,7 +82,7 @@ class Product(db.Model):
             "price": float(self.price),  # 原價
             "description": self.description,
             "category_id": self.category_id,
-            "image": self.image,
+            "images": self.images,
             "on_sale": current_sale is not None,
             "sale_price": round(sale_price, 2) if sale_price else None,  # 折扣後價格
             "sale_discount": current_sale.discount if current_sale else None,

@@ -124,7 +124,16 @@ function ProductManager() {
           : <span style={{ color: "#aaa" }}>—</span>
     },
     { title: "分類", dataIndex: "category_id" },
-    { title: "圖片", dataIndex: "image", render: (v) => v && <img src={v} alt="商品圖" width={50} /> },
+    {
+      title: "圖片",
+      dataIndex: "images",
+      render: (images) =>
+        images && images.length > 0 ? (
+          <img src={images[0]} alt="商品圖" width={50} />
+        ) : (
+          <span style={{ color: "#bbb" }}>無圖</span>
+        )
+    },
     {
       title: "操作",
       render: (_, record) => (
@@ -173,8 +182,36 @@ function ProductManager() {
           <Form.Item name="category_id" label="分類" rules={[{ required: true }]}>
             <Select options={categoryOptions} />
           </Form.Item>
-          <Form.Item name="image" label="圖片網址">
-            <Input />
+          <Form.Item label="圖片網址" required>
+            <Form.List name="images" rules={[{ required: true, message: "至少要有一張圖片" }]}>
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <div key={key} style={{ display: "flex", marginBottom: 8, alignItems: "center" }}>
+                      <Form.Item
+                        {...restField}
+                        name={name}
+                        rules={[
+                          { required: true, message: "請輸入圖片網址" },
+                          { type: "url", message: "必須是合法網址" }
+                        ]}
+                        style={{ flex: 1, marginBottom: 0 }}
+                      >
+                        <Input placeholder="https://..." />
+                      </Form.Item>
+                      {fields.length > 1 && (
+                        <Button danger type="link" onClick={() => remove(name)} style={{ marginLeft: 4 }}>
+                          移除
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button type="dashed" onClick={() => add()} block>
+                    新增一個圖片網址
+                  </Button>
+                </>
+              )}
+            </Form.List>
           </Form.Item>
           <Form.Item name="description" label="description">
             <Input />

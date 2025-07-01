@@ -11,7 +11,7 @@ def setup_products(app):
     if not Category.query.filter_by(id=1).first():
         db.session.add(Category(id=1, name='cat1', description='for test'))
     if not Product.query.filter_by(id=1).first():
-        db.session.add(Product(id=1, title='Test Product', price=100, description='desc', category_id=1, image='img'))
+        db.session.add(Product(id=1, title='Test Product', price=100, description='desc', category_id=1, images=['img1','img2'] ))
     db.session.commit()
 
 @pytest.fixture
