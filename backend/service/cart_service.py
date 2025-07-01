@@ -2,6 +2,7 @@ from models import db, Cart, CartItem, Product,Order,OrderItem
 from datetime import datetime
 from exceptions import NotFoundError
 from service.audit_service import AuditService
+from utils.notify_util import notify_user_order_created
 
 class CartService:
 
@@ -117,7 +118,9 @@ class CartService:
         message = CartService._update_cart_status_if_empty(user_id, cart)
 
         db.session.commit()
-
+        
+        notify_user_order_created(order)
+        
         return {
             "message": message,
             "order_id": order.id,

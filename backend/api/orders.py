@@ -72,6 +72,7 @@ def get_orders(user_id):
         "pages": orders_page.pages
     })
 
+
 # 查詢訂單明細
 @orders_bp.route('/order/<int:order_id>', methods=['GET'])
 @jwt_required()

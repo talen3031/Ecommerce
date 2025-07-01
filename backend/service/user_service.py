@@ -4,6 +4,7 @@ from flask_jwt_extended import create_access_token
 from exceptions import DuplicateError, UnauthorizedError
 import secrets
 from datetime import datetime, timedelta
+from utils.send_email import send_email
 
 class UserService:
     @staticmethod
@@ -56,9 +57,17 @@ class UserService:
         )
         db.session.add(reset_token)
         db.session.commit()
-          # 發送重設信（開發階段可直接 print）
+        # 發送重設信
         reset_link = f"https://your-frontend/reset_password?token={token}"
+        user = User.get_by_user_id(user_id)
+        
+        if user and user.email:
+            subject = "【電商系統】密碼重設連結"
+            content = f"請點擊以下連結重設密碼：<br><a href='{reset_link}'>{reset_link}</a>"
+            send_email(user.email, subject, content)
+        
         return reset_link
+
     @staticmethod
     def reset_password(token,new_password):
        
@@ -94,4 +103,4 @@ class UserService:
             user.phone = phone
         db.session.commit()
         return user
-
+    

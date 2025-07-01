@@ -1,7 +1,7 @@
 from models import db, Product,ProductOnSale,OrderItem,Order,Cart,CartItem
 from exceptions import NotFoundError
 from datetime import datetime
-
+from utils import notify_util
 class ProductService:
     @staticmethod
     def search(category_id=None, keyword=None, min_price=None, max_price=None, page=1, per_page=10):
@@ -59,6 +59,7 @@ class ProductService:
         db.session.delete(product)
         db.session.commit()
         return product
+
     @staticmethod
     def add_product_onsale(product_id,discount,start_date,end_date,description):
         if not (0 < discount < 1):
@@ -92,8 +93,12 @@ class ProductService:
         )
         db.session.add(sale)
         db.session.commit()
-        return sale
         
+        # 呼叫通知 function
+        notify_util.notify_users_cart_product_on_sale(product_id, discount, start_date, end_date, description)
+        
+        return sale
+
     @staticmethod
     def recommend_for_user(user_id, limit=5):
         # 1. 直接查詢該用戶所有買過的商品id

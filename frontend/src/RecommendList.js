@@ -12,9 +12,9 @@ function RecommendList({ userId, mode = "cart", limit = 5 }) {
     setLoading(true);
     let url;
     if (mode === "cart") {
-      url = `/cart/${userId}/recommend?limit=${limit}`;
+      url = `/carts/${userId}/recommend?limit=${limit}`;
     } else if (mode === "collaborative") {
-      url = `/cart/${userId}/recommend/collaborative?limit=${limit}`;
+      url = `/carts/${userId}/recommend/collaborative?limit=${limit}`;
     } else if (mode === "user") {
       url = `/users/${userId}/recommend?limit=${limit}`;
     }

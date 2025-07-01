@@ -114,11 +114,13 @@ function CartList() {
   
   let mode;
   if (!cart?.items || cart.items.length === 0) {
-    mode = "user";  // 購物車空的，個人化推薦
+    mode = "user"; 
+    console.log("mode:",mode) // 購物車空的，個人化推薦
   } else {
-    mode = "collaborative";  // 購物車有商品，協同過濾推薦
+    mode = "collaborative";  
+    console.log("mode:",mode) ;// 購物車有商品，協同過濾推薦
   }
-
+  
   return (
     <div style={{ maxWidth: 700, margin: "40px auto" }}>
       <h2>我的購物車</h2>

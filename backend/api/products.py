@@ -433,6 +433,15 @@ def add_product_sale(product_id):
                                            end_date=end_date_str,
                                            description=description)
 
+    admin_id = get_jwt_identity() 
+    # 寫入日誌
+    AuditService.log(
+        user_id = admin_id,
+        action = 'add on sale',
+        target_type = 'product',
+        target_id = sale.product_id,
+        description = f"update product: {sale.to_dict()}"
+    )
    
     return jsonify({"message": "Sale created", "sale_id": sale.id})
 

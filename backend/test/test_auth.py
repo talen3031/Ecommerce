@@ -39,7 +39,7 @@ def test_forgot_password_send_link(client):
     assert res.status_code == 200
     # 不論存在與否都應同樣訊息
     assert 'reset link' in res.get_json()['message']
-
+    
     # 在PasswordResetToken資料庫有新 token
     token = PasswordResetToken.get_user_newest_token(user_id=user.id)
 

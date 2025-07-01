@@ -86,7 +86,7 @@ def test_cart_content_recommend(client, user_token_and_id):
 
     # 建立新商品同分類，並假設 p2 熱賣（有訂單數紀錄）
     hot_title = f'Hot Product for user {user_id}'
-    p2 = Product(title=hot_title, price=200, description='Hot', category_id=1, image='img2')
+    p2 = Product(title=hot_title, price = 200, description='Hot', category_id=1, image='img2')
     db.session.add(p2)
     db.session.commit()
     

@@ -1,6 +1,5 @@
 from models import db, Order,Product
 from exceptions import NotFoundError
-
 class OrderService:
     @staticmethod
     def create(user_id, order_date, total=0, status='pending'):
@@ -64,6 +63,7 @@ class OrderService:
             raise ValueError("Only pending orders can be cancelled")
         order.status = 'cancelled'
         db.session.commit()
+        notify_user_order_status(order)
         return order
 
     @staticmethod
@@ -82,4 +82,5 @@ class OrderService:
             raise ValueError(f"Order is already in status '{status}'")
         order.status = status
         db.session.commit()
+        notify_user_order_status(order)
         return order
