@@ -88,4 +88,6 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-frontend:latest
+          build-args: |
+            REACT_APP_API_URL=${{ secrets.FRONTEND_API_URL }}
 
