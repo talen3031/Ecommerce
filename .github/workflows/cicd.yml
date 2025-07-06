@@ -28,7 +28,7 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
-    # 設定後端測試時需要用到的環境變數
+    # 設定後端測試時需要用到的環境變數 CI流程DB採用 Ecommerce(本地測試採用Ecommerce_test)
     env:
       SQLALCHEMY_DATABASE_URI: postgresql://postgres:talen168168@localhost:5432/Ecommerce
       JWT_SECRET_KEY: testkey
