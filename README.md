@@ -16,6 +16,9 @@
   - 本專案整合 SendGrid 提供自動通知 Email** 例如當有商品新增特價活動時，若用戶購物車有該商品，會主動通知用戶。
 - **Service Layer**
   - 從MVC架構中分離出service layer，將商業邏輯與資料查詢分離，易於擴充與單元測試。 
+- **容器化 (Docker)**
+  - 前端 (React)、後端 (Flask) 及資料庫 (PostgreSQL) 各自獨立打包成 Docker image。可藉由 `docker-compose` 快速在任意平台啟動完整開發/測試/部署環境。
+- **CI/CD 流程 (GitHub Actions + Docker Hub)**
 ---
 
 ## Requirement
@@ -82,14 +85,15 @@
 
 ```bash
 docker-compose up --build
----
 ```
+
 ###  CI/CD 流程 (GitHub Actions + Docker Hub)
 - **GitHub Actions workflow**
   - 每次 Push 到 main/master 分支，會自動啟動 GitHub Actions workflow，分別 build backend/frontend Docker image，自動推送到 Docker Hub（以 latest 標籤），專案根目錄下的 .github/workflows/cicd.yml 定義了完整自動化流程
 - **伺服器端部署/升級**
   - 伺服器可直接 docker pull 取回最新版 image，一鍵重啟服務，快速同步最新程式
 - **CI/CD流程圖**
+```text
 Git push / PR
     │
     ▼
@@ -112,3 +116,5 @@ GitHub Actions 啟動 Workflow
               ├── build backend image
               ├── build frontend image
               └── push 到 Docker Hub (talen3031/ecommerce-backend:latest, frontend:latest)
+```
+---
