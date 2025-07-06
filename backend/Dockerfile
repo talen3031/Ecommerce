@@ -10,4 +10,5 @@ COPY . .
 EXPOSE 5000
 
 # 啟動指令用 docker-compose 控制，這邊不寫死
-# CMD ["python", "app.py"]
+CMD ["sh", "-c", "python create_tables.py && python etl.py && python app.py"]
+
