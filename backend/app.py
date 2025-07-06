@@ -27,6 +27,7 @@ swagger_template = {
     }
 }
 
+#...
 def create_app(test_config=None):
     app = Flask(__name__)
     CORS(app, supports_credentials=True)
