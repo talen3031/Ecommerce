@@ -8,3 +8,5 @@ flask-jwt-extended
 sqlalchemy
 flask-sqlalchemy
 flasgger
+sendgrid
+pytest

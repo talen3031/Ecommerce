@@ -1,6 +1,6 @@
 from models import CartItem, Product  # 避免循環 import
 from utils.send_email import send_email  # 你自己的寄信工具
-
+import sys
 def notify_users_cart_product_on_sale(product_id, discount, start_date, end_date, description):
 
     cart_items = CartItem.query.filter_by(product_id=product_id).all()
@@ -22,7 +22,7 @@ def notify_users_cart_product_on_sale(product_id, discount, start_date, end_date
                 try:
                     send_email(user.email, subject, html_content)
                 except Exception as e:
-                    print(f"email 發送失敗: {user.email}, error: {e}")
+                    print(f"email 發送失敗: {user.email}, error: {e}", file=sys.stderr)
                 notified_user_ids.add(user.id)
 
 def notify_user_order_created(order):
@@ -45,7 +45,7 @@ def notify_user_order_created(order):
         try:
             from utils.send_email import send_email
             send_email(user.email, subject, html_content)
-            print(f"下單 email 發送成功!: {user.email}")
+            print(f"下單 email 發送成功!: {user.email}", file=sys.stderr)
         except Exception as e:
             print(f"下單 email 發送失敗: {user.email}, error: {e}")
 

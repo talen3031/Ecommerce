@@ -8,6 +8,10 @@ from flask import Flask
 app = create_app()
 app.app_context().push()
 
+if Category.query.first():
+    print("🟢 已有資料，跳過 ETL 載入")
+    exit(0)
+
 def etl_categories():
     print("下載 categories...")
     resp = requests.get("https://fakestoreapi.com/products/categories")
@@ -28,16 +32,16 @@ def etl_products(cat_name_id_map):
     resp = requests.get("https://fakestoreapi.com/products")
     products = resp.json()
     for prod in products:
-        exists = db.session.get(Product, prod['id'])
-        if exists:
+        # 檢查 title + category_id（唯一組合）
+        unique = Product.query.filter_by(title=prod['title'], category_id=cat_name_id_map[prod['category']]).first()
+        if unique:
             continue
         p = Product(
-            id=prod['id'],
             title=prod['title'],
             price=prod['price'],
             description=prod['description'],
             category_id=cat_name_id_map[prod['category']],
-            image=prod['image']
+            images=[prod['image']]
         )
         db.session.add(p)
     db.session.commit()
@@ -47,12 +51,14 @@ def etl_users():
     resp = requests.get("https://fakestoreapi.com/users")
     users = resp.json()
     for u in users:
-        if db.session.get(User, u['id']):
+        # 檢查 username、email
+        if User.query.filter_by(username=u['username']).first():
+            continue
+        if User.query.filter_by(email=u['email']).first():
             continue
         full_name = f"{u['name']['firstname']} {u['name']['lastname']}"
         address = f"{u['address']['number']} {u['address']['street']}, {u['address']['city']}"
         user = User(
-            id=u['id'],
             username=u['username'],
             email=u['email'],
             password=generate_password_hash(u['password']),
@@ -62,6 +68,19 @@ def etl_users():
         )
         db.session.add(user)
     db.session.commit()
+    
+    user = User(
+            username='talen3031',
+            email="talen3031@gmail.com",
+            password=generate_password_hash("talen168168"),
+            full_name='蔡b',
+            address='台南市東區',
+            phone='0923956156',
+            role='admin'
+        )
+    db.session.add(user)
+    db.session.commit()
+    
 
 def etl_carts_orders():
     print("下載 carts 與 orders...")
@@ -75,17 +94,23 @@ def etl_carts_orders():
         user_id = cart_data['userId']
         date = cart_data['date']
         items = cart_data['products']
-        #插入order
+        # 插入 order
         if is_order:
-            if db.session.get(Order, cart_data['id']):
+            # 用 user_id、order_date 判斷是否重複（可依你邏輯調整唯一條件）
+            unique_order = Order.query.filter_by(user_id=user_id, order_date=date).first()
+            if unique_order:
                 continue
-            order = Order(id=cart_data['id'], user_id=user_id, order_date=date, total=0, status='completed')
+            order = Order(user_id=user_id, order_date=date, total=0, status='paid')
             db.session.add(order)
             db.session.flush()
             total = 0
-            #插入order_item
+            # 插入 order_item
             for item in items:
-                product = db.session.get(Product, item['productId'])
+                # 用 order_id、product_id 判斷唯一性
+                unique_oi = OrderItem.query.filter_by(order_id=order.id, product_id=item['productId']).first()
+                if unique_oi:
+                    continue
+                product = Product.query.filter_by(title=item.get('title', ''), id=item['productId']).first()
                 if not product:
                     continue
                 subtotal = float(product.price) * item['quantity']
@@ -97,15 +122,20 @@ def etl_carts_orders():
                     price=product.price
                 ))
             order.total = total
-        #插入 carts
+        # 插入 cart
         else:
-            if db.session.get(Cart, cart_data['id']):
+            # 用 user_id、created_at 判斷是否重複（可依你邏輯調整唯一條件）
+            unique_cart = Cart.query.filter_by(user_id=user_id, created_at=date).first()
+            if unique_cart:
                 continue
-            cart = Cart(id=cart_data['id'], user_id=user_id, created_at=date, status='active')
+            cart = Cart(user_id=user_id, created_at=date, status='active')
             db.session.add(cart)
             db.session.flush()
-            #插入carts_item
+            # 插入 cart_item
             for item in items:
+                unique_ci = CartItem.query.filter_by(cart_id=cart.id, product_id=item['productId']).first()
+                if unique_ci:
+                    continue
                 db.session.add(CartItem(
                     cart_id=cart.id,
                     product_id=item['productId'],

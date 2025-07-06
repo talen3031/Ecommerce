@@ -1,11 +1,10 @@
-import os
+import os,sys
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 
-SENDGRID_API_KEY = "SENDGRID_API_KEY"  
-#SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")  # 建議放環境變數
-FROM_EMAIL = "your email"                 # 必須是SendGrid已認證的email
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")  # 建議放環境變數
+FROM_EMAIL = "talen3031@gmail.com"                 # 必須是SendGrid已認證的email
 
 def send_email(to_email, subject, html_content):
     message = Mail(
@@ -17,8 +16,8 @@ def send_email(to_email, subject, html_content):
     try:
         sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
-        print(f"Email sent! status_code={response.status_code}")
+        print(f"Email sent! status_code={response.status_code}", file=sys.stderr)
         return response.status_code
     except Exception as e:
-        print(f"SendGrid error: {e}")
+        print(f"SendGrid error: {e}", file=sys.stderr)
         return None
