@@ -3,7 +3,7 @@ import axios from "axios";
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
 });
-
+console.log("API URL: ", process.env.REACT_APP_API_URL);
 // 自動帶 JWT Token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
