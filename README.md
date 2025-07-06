@@ -2,6 +2,9 @@
 
 ## 專案簡介
 本專案為一套簡易電商 API 伺服器，後端採用 Python Flask 與 PostgreSQL 資料庫設計，前端採用 react 與 javascript 設計。
+我已部署至Render，可以訪問:
+https://ecommerce-frontend-latest.onrender.com (後端 :https://ecommerce-backend-latest-6fr5.onrender.com)
+(我使用 免費 Render Web Service，會自動 sleep，15 分鐘沒人用會關掉，但只要再次訪問會自動醒來，第一次加載會比較慢（最久可達 1 分鐘以上）)
 - **RESTful API 設計、Swagger API 文件**
 - **JWT 認證／權限控管**（支援管理員與一般用戶）
 - **ORM 資料存取 (SQLAlchemy) 、資料庫實作 建立**
