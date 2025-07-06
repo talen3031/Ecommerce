@@ -31,8 +31,8 @@ jobs:
     # 設定後端測試時需要用到的環境變數
     env:
       SQLALCHEMY_DATABASE_URI: postgresql://postgres:talen168168@localhost:5432/Ecommerce
-      JWT_SECRET_KEY: test_secret
-
+      JWT_SECRET_KEY: testkey
+      TEST_DB_NAME: Ecommerce
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4

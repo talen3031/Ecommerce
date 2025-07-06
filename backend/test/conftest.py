@@ -8,8 +8,11 @@ from models import db,User,Category
 
 @pytest.fixture
 def app():
+    db_name = os.environ.get('TEST_DB_NAME', 'Ecommerce_test')   # 預設本地用 Ecommerce_test/CI使用Ecommerce
+    db_uri = f'postgresql://postgres:talen168168@localhost:5432/{db_name}'
+
     app = create_app({
-        'SQLALCHEMY_DATABASE_URI': 'postgresql://postgres:talen168168@localhost:5432/Ecommerce_test',
+        'SQLALCHEMY_DATABASE_URI': db_uri,
         'TESTING': True,
         'JWT_SECRET_KEY': 'testkey',
     })
