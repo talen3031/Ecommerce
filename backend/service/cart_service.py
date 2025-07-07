@@ -18,6 +18,8 @@ class CartService:
         items = []
         for item in cart.cart_items:
             product = item.product
+            if not product or not product.is_active:
+                continue  # 跳過下架商品
             #計算折扣後價格
             final_price = product.get_final_price() if product else 0
             items.append({
@@ -41,7 +43,7 @@ class CartService:
             db.session.commit()
 
         # 2. 檢查商品是否存在
-        product = Product.get_by_product_id(product_id)
+        product = Product.get_active_by_product_id(product_id)
         if not product:
             raise NotFoundError("Product not found")
 

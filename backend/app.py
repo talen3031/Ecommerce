@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask, jsonify
 from models import db
 from api.products import products_bp
@@ -5,6 +7,7 @@ from api.users import users_bp
 from api.carts import carts_bp
 from api.orders import orders_bp
 from api.auth import auth_bp
+from api.upload import upload_bp
 from exceptions import NotFoundError, DuplicateError, UnauthorizedError, ForbiddenError
 from flask_jwt_extended import JWTManager
 from flasgger import Swagger
@@ -27,7 +30,6 @@ swagger_template = {
     }
 }
 
-#...
 def create_app(test_config=None):
     app = Flask(__name__)
     CORS(app, supports_credentials=True)
@@ -72,12 +74,14 @@ def create_app(test_config=None):
     app.register_blueprint(carts_bp)
     app.register_blueprint(orders_bp)
     app.register_blueprint(auth_bp)
-
+    app.register_blueprint(upload_bp)
     JWTManager(app)
 
     return app
 
 # 只在本機執行才會啟動 Flask 伺服器
 if __name__ == '__main__':
+    print("Cloudinary =", os.getenv("CLOUDINARY_CLOUD_NAME"))
+    print("CLOUDINARY_API_KEY =", os.getenv("CLOUDINARY_API_KEY"))
     app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)

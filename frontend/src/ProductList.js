@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Table, Pagination, Spin, Input, Button, Space, InputNumber, Select, Row, Col, message,Image } from "antd";
-import api from "./api";
+import { Card, Row, Col, Spin, Input, Button, InputNumber, Select, Pagination, message, Tag } from "antd";
 import RecommendList from "./RecommendList";
-
+import api from "./api";
 
 const categoryOptions = [
   { label: "全部", value: "" },
@@ -15,62 +14,47 @@ const categoryMap = Object.fromEntries(categoryOptions.map(opt => [opt.value, op
 
 function ProductList({ onSelectProduct }) {
   const [products, setProducts] = useState([]);
-  const [pageInfo, setPageInfo] = useState({ page: 1, pages: 1, total: 0, per_page: 10 });
+  const [pageInfo, setPageInfo] = useState({ page: 1, pages: 1, total: 0, per_page: 12 });
   const [loading, setLoading] = useState(false);
 
   const [searchValue, setSearchValue] = useState("");
   const [minPrice, setMinPrice] = useState();
   const [maxPrice, setMaxPrice] = useState();
   const [category, setCategory] = useState("");
-  const [sortField, setSortField] = useState("");
-  const [sortOrder, setSortOrder] = useState("");
-  const [cartLoading, setCartLoading] = useState({});
-  const [cartQuantity, setCartQuantity] = useState({});
 
-  // 查詢 API
-  const fetchProducts = (page = 1, pageSize = 10) => {
+  const fetchProducts = (page = 1, pageSize = 12) => {
     setLoading(true);
     let url = `/products?page=${page}&per_page=${pageSize}`;
     if (searchValue) url += `&keyword=${encodeURIComponent(searchValue)}`;
     if (minPrice !== undefined && minPrice !== null && minPrice !== "") url += `&min_price=${minPrice}`;
     if (maxPrice !== undefined && maxPrice !== null && maxPrice !== "") url += `&max_price=${maxPrice}`;
     if (category) url += `&category_id=${category}`;
-    if (sortField) url += `&sort_by=${sortField}&order=${sortOrder || "asc"}`;
     api.get(url)
-      .then(res => { //API 請求成功時進入這個區塊，res.data 就是回傳的資料
+      .then(res => {
         setProducts(res.data.products || []);
         setPageInfo({
-          page: res.data.page, //page 當前頁，pages 總頁數，total 總商品數，per_page 每頁幾
+          page: res.data.page,
           pages: res.data.pages,
           total: res.data.total,
-          per_page: res.data.per_page || 10,
+          per_page: res.data.per_page || 12,
         });
       })
-      .finally(() => setLoading(false)); //API 完成（不管成功失敗）後，設定 loading 為 false，畫面轉圈 loading 動畫關掉
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     fetchProducts(pageInfo.page, pageInfo.per_page);
     // eslint-disable-next-line
-  }, [searchValue, minPrice, maxPrice, category, sortField, sortOrder]);
+  }, [searchValue, minPrice, maxPrice, category]);
 
-  const handlePageChange = (page, pageSize) => {
-    setPageInfo(prev => ({ ...prev, page }));  //把 pageInfo 狀態裡的 page 更新成新頁碼
-    fetchProducts(page, pageSize);//呼叫 API 取得指定分頁的商品列表
-  };
-
-  const handleTableChange = (pagination, filters, sorter) => {
-    if (sorter.order) {
-      setSortField(sorter.field);
-      setSortOrder(sorter.order === "ascend" ? "asc" : "desc");
-    } else {
-      setSortField("");
-      setSortOrder("");
-    }
+  const handlePageChange = (page) => {
+    setPageInfo(prev => ({ ...prev, page }));
+    fetchProducts(page, pageInfo.per_page);
   };
 
   const handleSearch = () => {
     setPageInfo(prev => ({ ...prev, page: 1 }));
+    fetchProducts(1, pageInfo.per_page);
   };
 
   const handleClear = () => {
@@ -78,118 +62,14 @@ function ProductList({ onSelectProduct }) {
     setMinPrice();
     setMaxPrice();
     setCategory("");
-    setSortField("");
-    setSortOrder("");
     setPageInfo(prev => ({ ...prev, page: 1 }));
+    fetchProducts(1, pageInfo.per_page);
   };
-
-  // 加入購物車
-  const handleAddToCart = async (productId) => {
-    const userId = localStorage.getItem("user_id");
-    if (!userId) {
-      message.error("請先登入");
-      return;
-    }
-    const quantity = cartQuantity[productId] || 1;
-    setCartLoading(loading => ({ ...loading, [productId]: true }));
-    try {
-      await api.post(`/carts/${userId}`, {
-        product_id: productId,
-        quantity,
-      });
-      message.success("已加入購物車！");
-    } catch (err) {
-      message.error("加入購物車失敗：" + (err.response?.data?.error || err.message));
-    }
-    setCartLoading(loading => ({ ...loading, [productId]: false }));
-  };
-
-  const columns = [
-    {
-      title: "圖片",
-      dataIndex: "images",
-      render: (images) => {
-        if (!images || images.length === 0) return <span style={{ color: "#bbb" }}>無圖</span>;
-        // 顯示前1~3張（可依需求調整）
-        return (
-          <span>
-            {images.slice(0, 1).map((url, idx) => (
-              <img
-                key={idx}
-                src={url}
-                width={60}
-                height={60}
-                alt={`商品圖${idx + 1}`}
-                style={{ objectFit: "cover", borderRadius: 8, marginRight: 4 }}
-              />
-            ))}
-          </span>
-        );
-      }
-    },
-
-    { title: '名稱', 
-      dataIndex: 'title', 
-      sorter: true ,
-        render: (value, record) => (
-        <a style={{ cursor: "pointer" }} onClick={() => onSelectProduct(record.id)}>
-          {value}
-        </a>)
-    },
-     // 原價：特價時顯示刪除線
-    {
-      title: "原價",
-      dataIndex: "price",
-      render: (value, record) =>
-        record.on_sale
-          ? <span style={{ textDecoration: "line-through", color: "#888" }}>NT${value}</span>
-          : <span>NT${value}</span>
-    },
-    // 折扣後價格：只有特價時顯示
-    {
-      title: "特價",
-      dataIndex: "sale_price",
-      render: (value, record) =>
-        record.on_sale
-          ? <span style={{ color: "#fa541c", fontWeight: "bold" }}>NT${value}</span>
-          : <span style={{ color: "#aaa" }}>—</span>
-    },
-    {
-    title: "分類",
-    dataIndex: "category_id",
-    render: (value) => categoryMap[value] || "未知"
-    },
-    {
-    title: "分類id",
-    dataIndex: "category_id"
-    },
-    {
-      title: '加入購物車',
-      render: (_, record) => (
-        <Space>
-          <InputNumber
-            min={1}
-            max={99}
-            defaultValue={1}
-            style={{ width: 60 }}
-            value={cartQuantity[record.id] || 1}
-            onChange={val => setCartQuantity(q => ({ ...q, [record.id]: val }))}
-          />
-          <Button
-            loading={cartLoading[record.id]}
-            onClick={() => handleAddToCart(record.id)}
-            type="primary"
-          >
-            加入
-          </Button>
-        </Space>
-      ),
-    }
-  ];
 
   return (
     <div style={{ maxWidth: 900, margin: "40px auto" }}>
-      <h2>商品列表</h2>
+      <h2>商品瀏覽</h2>
+      {/* 搜尋/篩選 */}
       <Row gutter={8} style={{ marginBottom: 16 }}>
         <Col>
           <Input
@@ -235,16 +115,55 @@ function ProductList({ onSelectProduct }) {
           <Button onClick={handleClear}>清除</Button>
         </Col>
       </Row>
+
+      {/* 商品卡片2欄排列 */}
       <Spin spinning={loading}>
-        <Table
-          columns={columns}
-          dataSource={products}
-          rowKey="id"
-          pagination={false}
-          onChange={handleTableChange}
-        />
+        <Row gutter={[24, 24]}>
+          {products.map(product => (
+            <Col xs={24} sm={12} md={12} lg={12} key={product.id}>
+              <Card
+                hoverable
+                onClick={() => onSelectProduct(product.id)}
+                cover={
+                  <img
+                    src={product.images?.[0]}
+                    alt={product.title}
+                    style={{ height: 240, objectFit: "cover", borderRadius: 8 }}
+                  />
+                }
+                style={{
+                  borderRadius: 12,
+                  boxShadow: "0 2px 16px #eee",
+                  cursor: "pointer",
+                  minHeight: 370
+                }}
+                bodyStyle={{ padding: 16 }}
+              >
+                <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 4 }}>{product.title}</div>
+                <div>
+                  {product.on_sale ? (
+                    <>
+                      <span style={{ color: "#fa541c", fontWeight: "bold", fontSize: 18 }}>NT${product.sale_price}</span>
+                      <span style={{ textDecoration: "line-through", color: "#888", marginLeft: 8 }}>NT${product.price}</span>
+                      <Tag color="red" style={{ marginLeft: 8, verticalAlign: "middle" }}>特價</Tag>
+                    </>
+                  ) : (
+                    <span style={{ fontWeight: "bold", fontSize: 18 }}>NT${product.price}</span>
+                  )}
+                </div>
+                <div style={{ color: "#999", fontSize: 14, margin: "6px 0" }}>
+                  {categoryMap[product.category_id] || "未知"}
+                </div>
+              </Card>
+            </Col>
+          ))}
+          {products.length === 0 && !loading && (
+            <div style={{ color: "#aaa", margin: "40px auto" }}>找不到商品</div>
+          )}
+        </Row>
       </Spin>
-      <div style={{ textAlign: "center", margin: "24px 0" }}>
+
+      <div style={{ textAlign: "center", margin: "32px 0" }}>
         <Pagination
           current={pageInfo.page}
           pageSize={pageInfo.per_page}
@@ -256,8 +175,12 @@ function ProductList({ onSelectProduct }) {
       <div style={{ textAlign: "right", color: "#888" }}>
         共 {pageInfo.total} 筆資料
       </div>
-      <RecommendList userId={localStorage.getItem("user_id")} mode="user" limit={6} />
-
+      <RecommendList
+        userId={localStorage.getItem("user_id")}
+        mode="user"
+        limit={6}
+        onSelectProduct={onSelectProduct}
+      />
     </div>
   );
 }

@@ -4,8 +4,13 @@ from datetime import datetime
 from utils import notify_util
 class ProductService:
     @staticmethod
+    def search_all_admin(page=1, per_page=10):
+        query = Product.query.order_by(Product.id)
+        return query.paginate(page=page, per_page=per_page, error_out=False)
+    
+    @staticmethod
     def search(category_id=None, keyword=None, min_price=None, max_price=None, page=1, per_page=10):
-        query = Product.query
+        query = Product.query.filter_by(is_active=True)
         if category_id is not None:
             query = query.filter_by(category_id=category_id)
         if keyword:
@@ -135,6 +140,7 @@ class ProductService:
             .outerjoin(subq, Product.id == subq.c.product_id)
             .filter(Product.category_id.in_(category_ids))
             .filter(~Product.id.in_(bought_product_ids))
+            .filter(Product.is_active == True)
             .order_by(subq.c.order_count.desc().nullslast(), Product.id.desc())
             .limit(limit)
             .all()
@@ -176,6 +182,7 @@ class ProductService:
             .outerjoin(subq, Product.id == subq.c.product_id)
             .filter(Product.category_id.in_(category_ids))
             .filter(~Product.id.in_(cart_product_ids))
+            .filter(Product.is_active == True)
             .order_by(subq.c.order_count.desc().nullslast(), Product.id.desc())
             .limit(limit)
             .all()
@@ -219,7 +226,7 @@ class ProductService:
             return []
 
         # 4. 撈出商品資料
-        products = Product.query.filter(Product.id.in_(product_ids)).all()
+        products = Product.query.filter(Product.id.in_(product_ids)).all().filter(Product.is_active == True)
         
         # 最終結果排序依照出現次數
         id_to_product_map = {p.id: p for p in products}
@@ -230,3 +237,12 @@ class ProductService:
                 result.append(id_to_product_map[pid])
         
         return result
+    
+    @staticmethod
+    def set_product_active_status(product_id, is_active):
+        product = Product.get_by_product_id(product_id)
+        if not product:
+            raise NotFoundError("product not found")
+        product.is_active = is_active
+        db.session.commit()
+        return product

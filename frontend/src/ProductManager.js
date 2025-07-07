@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Popconfirm, message, Modal, Form, Input, InputNumber, Select, DatePicker } from "antd";
+import { Table, Button, Popconfirm, message, Modal, Form, Input, InputNumber, Select, DatePicker, Upload, Spin } from "antd";
+import { PlusOutlined } from '@ant-design/icons';
 import api from "./api";
 import dayjs from "dayjs";
 
@@ -11,47 +12,57 @@ const categoryOptions = [
   { label: "女生衣服", value: 4 },
 ];
 
+// 型別安全判斷商品狀態
+const isActive = (val) => val === true || val === 1 || val === "1" || val === "true";
+
 function ProductManager() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState(null); // null=新增，否則編輯
+  const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
-  // 特價 modal 狀態
   const [saleModalOpen, setSaleModalOpen] = useState(false);
   const [saleForm] = Form.useForm();
   const [saleProductId, setSaleProductId] = useState(null);
 
-  // 取得所有商品
   const fetchProducts = () => {
     setLoading(true);
-    api.get("/products?per_page=1000")
+    api.get("/products/admin?per_page=1000")
       .then(res => setProducts(res.data.products || res.data || []))
       .finally(() => setLoading(false));
   };
   useEffect(fetchProducts, []);
 
-  // 開啟編輯/新增表單
   const openEdit = (record) => {
     setEditing(record);
     setModalOpen(true);
     if (record) {
       form.setFieldsValue(record);
+      setFileList((record.images || []).map(url => ({ uid: url, url, name: url })));
     } else {
       form.resetFields();
+      setFileList([]);
     }
   };
 
-  // 送出新增/編輯
   const handleSave = async () => {
+    if (uploading) {
+      message.warning("圖片尚在上傳中，請稍候再試");
+      return;
+    }
     try {
       const values = await form.validateFields();
+      const imageUrls = fileList.map(file => file.url || file.response?.url).filter(Boolean);
+      const payload = { ...values, images: imageUrls };
+
       if (editing) {
-        await api.put(`/products/${editing.id}`, values);
+        await api.put(`/products/${editing.id}`, payload);
         message.success("已更新商品！");
       } else {
-        await api.post("/products", values);
+        await api.post("/products", payload);
         message.success("已新增商品！");
       }
       setModalOpen(false);
@@ -61,7 +72,6 @@ function ProductManager() {
     }
   };
 
-  // 刪除商品
   const handleDelete = async (id) => {
     try {
       await api.delete(`/products/${id}`);
@@ -72,7 +82,6 @@ function ProductManager() {
     }
   };
 
-  // 新增特價
   const openSaleModal = (productId) => {
     setSaleProductId(productId);
     setSaleModalOpen(true);
@@ -83,8 +92,6 @@ function ProductManager() {
     try {
       const values = await saleForm.validateFields();
       const { discount, start_date, end_date, description } = values;
-
-      // 格式轉換，API 要字串
       const start_date_str = dayjs(start_date).format("YYYY-MM-DDTHH:mm:ss");
       const end_date_str = dayjs(end_date).format("YYYY-MM-DDTHH:mm:ss");
 
@@ -102,26 +109,44 @@ function ProductManager() {
     }
   };
 
+  // 下架
+  const handleDeactivate = async (id) => {
+    try {
+      await api.post(`/products/${id}/deactivate`);
+      message.success("商品已下架！");
+      fetchProducts();
+    } catch {
+      message.error("下架失敗");
+    }
+  };
+
+  // 上架
+  const handleActivate = async (id) => {
+    try {
+      await api.post(`/products/${id}/activate`);
+      message.success("商品已重新上架！");
+      fetchProducts();
+    } catch {
+      message.error("上架失敗");
+    }
+  };
+
   const columns = [
-    { title: "ID", dataIndex: "id" ,sorter: (a, b) => a.id - b.id,defaultSortOrder: "ascend", },
+    { title: "ID", dataIndex: "id", sorter: (a, b) => a.id - b.id, defaultSortOrder: "ascend" },
     { title: "名稱", dataIndex: "title" },
-      // 原價：特價時顯示刪除線
     {
       title: "原價",
       dataIndex: "price",
-      render: (value, record) =>
-        record.on_sale
-          ? <span style={{ textDecoration: "line-through", color: "#888" }}>NT${value}</span>
-          : <span>NT${value}</span>
+      render: (value, record) => record.on_sale
+        ? <span style={{ textDecoration: "line-through", color: "#888" }}>NT${value}</span>
+        : <span>NT${value}</span>
     },
-    // 折扣後價格：只有特價時顯示
     {
       title: "特價",
       dataIndex: "sale_price",
-      render: (value, record) =>
-        record.on_sale
-          ? <span style={{ color: "#fa541c", fontWeight: "bold" }}>NT${value}</span>
-          : <span style={{ color: "#aaa" }}>—</span>
+      render: (value, record) => record.on_sale
+        ? <span style={{ color: "#fa541c", fontWeight: "bold" }}>NT${value}</span>
+        : <span style={{ color: "#aaa" }}>—</span>
     },
     { title: "分類", dataIndex: "category_id" },
     {
@@ -135,18 +160,33 @@ function ProductManager() {
         )
     },
     {
+      title: "狀態",
+      dataIndex: "is_active",
+      render: (value, record) => {
+      console.log("商品ID:", record.id, "is_active:", value);
+      return isActive(value)
+        ? <span style={{ color: "#52c41a" }}>上架</span>
+        : <span style={{ color: "#f5222d" }}>下架</span>;
+       }
+    },
+    {
       title: "操作",
       render: (_, record) => (
         <>
-          <Button size="small" onClick={() => openEdit(record)} style={{ marginRight: 8 }}>
-            編輯
-          </Button>
+          <Button size="small" onClick={() => openEdit(record)} style={{ marginRight: 8 }}>編輯</Button>
           <Popconfirm title="確定刪除？" onConfirm={() => handleDelete(record.id)}>
             <Button danger size="small" style={{ marginRight: 8 }}>刪除</Button>
           </Popconfirm>
-          <Button size="small" type="dashed" onClick={() => openSaleModal(record.id)}>
-            新增特價
-          </Button>
+          <Button size="small" type="dashed" onClick={() => openSaleModal(record.id)} style={{ marginRight: 8 }}>新增特價</Button>
+          {isActive(record.is_active) ? (
+            <Popconfirm title="確定要下架這個商品嗎？" onConfirm={() => handleDeactivate(record.id)}>
+              <Button size="small" danger>下架</Button>
+            </Popconfirm>
+          ) : (
+            <Popconfirm title="確定要重新上架？" onConfirm={() => handleActivate(record.id)}>
+              <Button size="small" type="primary">上架</Button>
+            </Popconfirm>
+          )}
         </>
       ),
     },
@@ -157,14 +197,9 @@ function ProductManager() {
       <Button type="primary" style={{ marginBottom: 16 }} onClick={() => openEdit(null)}>
         新增商品
       </Button>
-      <Table
-        columns={columns}
-        dataSource={products}
-        rowKey="id"
-        loading={loading}
-      />
+      <Table columns={columns} dataSource={products} rowKey="id" loading={loading} />
 
-      {/* 商品新增/編輯 modal */}
+      {/* 新增/編輯商品 modal */}
       <Modal
         title={editing ? "編輯商品" : "新增商品"}
         open={modalOpen}
@@ -182,37 +217,36 @@ function ProductManager() {
           <Form.Item name="category_id" label="分類" rules={[{ required: true }]}>
             <Select options={categoryOptions} />
           </Form.Item>
-          <Form.Item label="圖片網址" required>
-            <Form.List name="images" rules={[{ required: true, message: "至少要有一張圖片" }]}>
-              {(fields, { add, remove }) => (
-                <>
-                  {fields.map(({ key, name, ...restField }) => (
-                    <div key={key} style={{ display: "flex", marginBottom: 8, alignItems: "center" }}>
-                      <Form.Item
-                        {...restField}
-                        name={name}
-                        rules={[
-                          { required: true, message: "請輸入圖片網址" },
-                          { type: "url", message: "必須是合法網址" }
-                        ]}
-                        style={{ flex: 1, marginBottom: 0 }}
-                      >
-                        <Input placeholder="https://..." />
-                      </Form.Item>
-                      {fields.length > 1 && (
-                        <Button danger type="link" onClick={() => remove(name)} style={{ marginLeft: 4 }}>
-                          移除
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button type="dashed" onClick={() => add()} block>
-                    新增一個圖片網址
-                  </Button>
-                </>
-              )}
-            </Form.List>
+
+          <Form.Item label="圖片上傳" required>
+            <Spin spinning={uploading} tip="圖片上傳中...">
+              <Upload
+                listType="picture-card"
+                fileList={fileList}
+                customRequest={async ({ file, onSuccess, onError }) => {
+                  const formData = new FormData();
+                  formData.append("image", file);
+                  setUploading(true);
+                  try {
+                    const res = await api.postForm("/upload/upload_image", formData);
+                    setFileList(prev => [...prev, { uid: file.uid, name: file.name, url: res.data.url }]);
+                    onSuccess();
+                  } catch (err) {
+                    onError(err);
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+                onRemove={(file) => {
+                  setFileList(prev => prev.filter(f => f.uid !== file.uid));
+                }}
+                showUploadList={{ showPreviewIcon: false }}
+              >
+                {fileList.length < 5 && <div><PlusOutlined /><div style={{ marginTop: 8 }}>上傳</div></div>}
+              </Upload>
+            </Spin>
           </Form.Item>
+
           <Form.Item name="description" label="description">
             <Input />
           </Form.Item>
@@ -228,35 +262,16 @@ function ProductManager() {
         destroyOnClose
       >
         <Form form={saleForm} layout="vertical">
-          <Form.Item
-            name="discount"
-            label="折數（例如 0.8 代表 8 折）"
-            rules={[
-              { required: true, message: "請輸入折數" },
-              { type: "number", min: 0.01, max: 0.99, message: "折數必須介於 0~1 之間" },
-            ]}
-          >
+          <Form.Item name="discount" label="折數（例如 0.8 代表 8 折）" rules={[{ required: true, type: "number", min: 0.01, max: 0.99 }]}>
             <InputNumber step={0.01} min={0.01} max={0.99} style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item
-            name="start_date"
-            label="特價開始"
-            rules={[{ required: true, message: "請選擇開始日期" }]}
-          >
+          <Form.Item name="start_date" label="特價開始" rules={[{ required: true }]}>
             <DatePicker showTime format="YYYY-MM-DDTHH:mm:ss" style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item
-            name="end_date"
-            label="特價結束"
-            rules={[{ required: true, message: "請選擇結束日期" }]}
-          >
+          <Form.Item name="end_date" label="特價結束" rules={[{ required: true }]}>
             <DatePicker showTime format="YYYY-MM-DDTHH:mm:ss" style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item
-            name="description"
-            label="活動說明"
-            rules={[]}
-          >
+          <Form.Item name="description" label="活動說明">
             <Input.TextArea rows={2} />
           </Form.Item>
         </Form>

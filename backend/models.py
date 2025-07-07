@@ -20,6 +20,7 @@ class Product(db.Model):
     description = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     images = db.Column(JSONB)
+    is_active = db.Column(db.Boolean, default=True)  # True: 上架, False: 下架
     category = db.relationship('Category', backref=db.backref('products', lazy=True))
     __table_args__ = (
         db.UniqueConstraint('title', 'category_id', name='unique_product_title_category'),
@@ -28,6 +29,9 @@ class Product(db.Model):
     @classmethod
     def get_by_product_id(cls, product_id):
         return cls.query.filter_by(id=product_id).first()
+    @classmethod
+    def get_active_by_product_id(cls, product_id):
+        return cls.query.filter_by(id=product_id, is_active=True).first()
     
     @classmethod
     def get_by_category_id(cls, category_id):
@@ -90,6 +94,7 @@ class Product(db.Model):
             "sale_end": current_sale.end_date.isoformat() if current_sale else None,
             "sale_description": sale_description,
             "sale_id": current_sale.id if current_sale else None,
+            "is_active": self.is_active,
         }
 
 

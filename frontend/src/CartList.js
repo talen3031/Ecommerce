@@ -4,7 +4,7 @@ import RecommendList from "./RecommendList";
 
 import api from "./api";
 
-function CartList() {
+function CartList(onSelectProduct) {
   const userId = localStorage.getItem("user_id");
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -141,8 +141,9 @@ function CartList() {
       </div>
       <RecommendList
         userId={localStorage.getItem("user_id")}
-        mode={mode}
-        limit={3}
+        mode="user"
+        limit={6}
+        onSelectProduct={onSelectProduct}
       />
     </div>
   );

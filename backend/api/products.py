@@ -7,6 +7,7 @@ from models import db, Product
 from service.product_service import ProductService
 from service.audit_service import AuditService
 from datetime import datetime
+
 """
 definitions:
   Product:
@@ -85,7 +86,46 @@ def get_products():
         "per_page": products_page.per_page,
         "pages": products_page.pages
     })
-    
+
+@products_bp.route('/admin', methods=['GET'])
+@jwt_required()
+@admin_required
+def get_products_admin():
+    """
+    查詢所有商品（管理員，含上架/下架）
+    ---
+    tags:
+      - products
+    security:
+      - Bearer: []
+    parameters:
+      - in: query
+        name: page
+        type: integer
+        required: false
+      - in: query
+        name: per_page
+        type: integer
+        required: false
+    responses:
+      200:
+        description: 所有商品列表
+        schema:
+          type: object
+          properties:
+            products:
+              type: array
+              items:
+                type: object
+      403:
+        description: 權限不足
+    """
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    products_page = ProductService.search_all_admin(page=page, per_page=per_page)
+    products = [p.to_dict() for p in products_page.items]
+    return jsonify({"products": products, "total": products_page.total, "page": page, "per_page": per_page})
+
 # 查詢單一商品
 @products_bp.route('/<int:product_id>', methods=['GET'])
 def get_product(product_id):
@@ -121,7 +161,7 @@ def get_product(product_id):
       404:
         description: 商品不存在
     """
-    product = Product.get_by_product_id(product_id)
+    product = Product.get_active_by_product_id(product_id)
     
     if product:
         return jsonify(product.to_dict())
@@ -445,3 +485,59 @@ def add_product_sale(product_id):
     return jsonify({"message": "Sale created", "sale_id": sale.id})
 
 
+@products_bp.route('/<int:product_id>/deactivate', methods=['POST'])
+@jwt_required()
+@admin_required
+def deactivate_product(product_id):
+    """
+    下架商品（需管理員）
+    ---
+    tags:
+      - products
+    parameters:
+      - in: path
+        name: product_id
+        type: integer
+        required: true
+        description: 商品ID
+    responses:
+      200:
+        description: 商品下架成功
+        schema:
+          type: object
+          properties:
+            message:
+              type: string
+              example: "Product deactivated"
+      404:
+        description: 商品不存在
+        schema:
+          properties:
+            error:
+              type: string
+              example: "product not found"
+    """
+    
+    product = ProductService.set_product_active_status(product_id, False)
+    AuditService.log(
+        user_id=get_jwt_identity(),
+        action='deactivate',
+        target_type='product',
+        target_id=product_id,
+        description=f"Product {product_id} deactivated"
+    )
+    return jsonify({"message": "Product deactivated"})
+
+@products_bp.route('/<int:product_id>/activate', methods=['POST'])
+@jwt_required()
+@admin_required
+def activate_product(product_id):
+    product = ProductService.set_product_active_status(product_id, True)
+    AuditService.log(
+        user_id=get_jwt_identity(),
+        action='activate',
+        target_type='product',
+        target_id=product_id,
+        description=f"Product {product_id} activated"
+    )
+    return jsonify({"message": "Product activated"})

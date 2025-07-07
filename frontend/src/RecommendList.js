@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, Spin, message, Row, Col } from "antd";
 import api from "./api";
 
-function RecommendList({ userId, mode = "cart", limit = 5 }) {
+function RecommendList({ userId, mode = "cart", limit = 5 ,onSelectProduct}) {
   // mode: "cart"（購物車推薦），"collaborative"（協同過濾），"user"（購買紀錄）
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -35,13 +35,15 @@ function RecommendList({ userId, mode = "cart", limit = 5 }) {
             <Col key={product.id} span={8} style={{ marginBottom: 16 }}>
               <Card
                 hoverable
+                onClick={() => onSelectProduct && onSelectProduct(product.id)}
                 cover={
                   <img
                     src={product.images[0]}
                     alt={product.title}
-                    style={{ height: 120, objectFit: "cover" }}
+                    style={{ height: 120, objectFit: "cover", cursor: "pointer" }}
                   />
                 }
+                style={{ cursor: "pointer" }}
               >
                 <Card.Meta
                   title={product.title}

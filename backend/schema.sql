@@ -13,6 +13,7 @@ CREATE TABLE products (
     description TEXT,
     category_id INTEGER REFERENCES categories(id),
     image VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
     CONSTRAINT unique_product_title_category UNIQUE (title, category_id)
 );
 

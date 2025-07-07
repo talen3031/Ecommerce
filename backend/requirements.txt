@@ -10,3 +10,5 @@ flask-sqlalchemy
 flasgger
 sendgrid
 pytest
+dotenv
+cloudinary

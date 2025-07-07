@@ -61,6 +61,8 @@ https://ecommerce-frontend-latest.onrender.com (後端 :https://ecommerce-backen
 - pytest
 - PostgreSQL
 - sendgrid
+- dotenv
+- cloudinary
 ---
 
 ## 主要功能
@@ -75,6 +77,7 @@ https://ecommerce-frontend-latest.onrender.com (後端 :https://ecommerce-backen
   - 新增／修改／刪除（管理員）
   - 商品唯一性檢查
   - 商品特價功能
+  - 商品上下架功能
 
 ### 購物車（Cart）
   - 加入／移除商品
