@@ -226,8 +226,8 @@ class ProductService:
             return []
 
         # 4. 撈出商品資料
-        products = Product.query.filter(Product.id.in_(product_ids)).all().filter(Product.is_active == True)
-        
+        products = Product.query.filter(Product.id.in_(product_ids),Product.is_active == True).all()  # 其他條件也可以加進來
+
         # 最終結果排序依照出現次數
         id_to_product_map = {p.id: p for p in products}
         
