@@ -34,14 +34,19 @@ def test_order_flow(client, user_token_and_id):
     client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 1},
                 headers={'Authorization': f'Bearer {token}'})
 
+    res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    print("下單前購物車：", res.status_code, res.get_json())
+
     res = client.post(f'/carts/{user_id}/checkout',
                       json={'items': [{'product_id': 1, 'quantity': 1}]},
                       headers={'Authorization': f'Bearer {token}'})
+    print("order checkout resp：", res.status_code, res.get_json())
     assert res.status_code == 200
     order_id = res.get_json()['order_id']
 
     # 查詢歷史訂單
     res = client.get(f'/orders/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    print("查詢訂單 resp：", res.status_code, res.get_json())
     assert res.status_code == 200
     result = res.get_json()
     orders = result['orders']
@@ -49,9 +54,9 @@ def test_order_flow(client, user_token_and_id):
     order = orders[0]
     assert order['id'] == order_id
 
-
     # 查詢訂單明細
     res = client.get(f'/orders/order/{order_id}', headers={'Authorization': f'Bearer {token}'})
+    print("查詢訂單明細 resp：", res.status_code, res.get_json())
     assert res.status_code == 200
     order = res.get_json()
     assert order['order_id'] == order_id
@@ -60,9 +65,10 @@ def test_order_flow(client, user_token_and_id):
     # 修改訂單狀態
     res = client.patch(f'/orders/{order_id}/status', json={'status': 'paid'},
                        headers={'Authorization': f'Bearer {token}'})
+    print("改訂單狀態 resp：", res.status_code, res.get_json())
     assert res.status_code == 200
 
-    # 取消訂單（應該只允許 pending 狀態時成功，這裡測試已 paid 應失敗）
+    # 取消訂單
     res = client.post(f'/orders/{order_id}/cancel', headers={'Authorization': f'Bearer {token}'})
-    # 若已 paid 應該回 400
+    print("取消訂單 resp：", res.status_code, res.get_json())
     assert res.status_code == 400

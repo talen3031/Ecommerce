@@ -90,16 +90,21 @@ def test_cart_checkout(client, user_token_and_id):
     client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 2},
                 headers={'Authorization': f'Bearer {token}'})
 
+    # 結帳前 印出購物車內容
+    res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    print("Checkout 前購物車：", res.status_code, res.get_json())
+
     # 正常結帳
     res = client.post(f'/carts/{user_id}/checkout',
                       json={'items': [{'product_id': 1, 'quantity': 2}]},
                       headers={'Authorization': f'Bearer {token}'})
+    print("Checkout resp：", res.status_code, res.get_json())
     assert res.status_code == 200
     assert 'order_id' in res.get_json()
 
-    # 再查購物車，應該已空（或 checked_out 狀態）
+    # 再查購物車，應該已空
     res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
-    # checked_out後 items應該是空的
+    print("Checkout 後購物車：", res.status_code, res.get_json())
     assert res.get_json()['items'] == []
 
 def test_cart_content_recommend(client, user_token_and_id):
@@ -167,7 +172,6 @@ def test_cart_collaborative_recommend(client, user_token_and_id):
     assert res.status_code == 200
     data = res.get_json()
     assert any(p['title'] == collab_title for p in data)
-    
 def test_discount_code_checkout_flow(client, user_token_and_id, discount_code):
     token, user_id = user_token_and_id
 
@@ -180,16 +184,20 @@ def test_discount_code_checkout_flow(client, user_token_and_id, discount_code):
     assert res.status_code == 200
 
     # 2. 前端在購物車頁輸入折扣碼查詢折扣後金額
+    res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    print("折扣碼流程前購物車：", res.status_code, res.get_json())
+
     res = client.post(
         f'/carts/{user_id}/apply_discount', 
         json={'code': discount_code.code},
         headers={'Authorization': f'Bearer {token}'}
     )
+    print("套用折扣碼 resp:", res.status_code, res.get_json())
     assert res.status_code == 200
     data = res.get_json()
     assert data["success"] is True
-    assert data["discounted_total"] == 160   # 原價100*2=200，8折160
-    assert data["discount_amount"] == 40     # 折抵40元
+    assert data["discounted_total"] == 160
+    assert data["discount_amount"] == 40
 
     # 3. 直接用折扣碼結帳
     res = client.post(
@@ -200,6 +208,7 @@ def test_discount_code_checkout_flow(client, user_token_and_id, discount_code):
         },
         headers={'Authorization': f'Bearer {token}'}
     )
+    print("折扣碼 checkout resp:", res.status_code, res.get_json())
     assert res.status_code == 200
     result = res.get_json()
     assert result["discount_code"] == discount_code.code
@@ -209,4 +218,5 @@ def test_discount_code_checkout_flow(client, user_token_and_id, discount_code):
 
     # 4. 再查一次購物車，應為空
     res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    print("折扣碼 checkout 後購物車：", res.status_code, res.get_json())
     assert res.get_json()['items'] == []
