@@ -39,12 +39,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
-
+      
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
         working-directory: ./backend
 
+      - name: Create Google Sheet credential file
+        run: |
+          echo "${{ secrets.GOOGLE_SHEET_CRED_JSON }}" > backend/etc/secrets/ecommerce-465511-3a8c7b2b3a44.json
+      
       - name: Show env (debug)
         run: env
 

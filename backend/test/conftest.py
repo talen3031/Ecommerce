@@ -7,21 +7,7 @@ from app import create_app
 from models import db,User,Category
 from unittest.mock import patch
 
-def dummy_append_order_to_sheet(*a, **k):
-    return None
-# 在不同執行路徑下自動判斷 patch 路徑
-PATCH_PATHS = [
-    "backend.utils.google_sheets_util.append_order_to_sheet",  # CI/CD 大多這個
-    "utils.google_sheets_util.append_order_to_sheet",          # 本地
-    "google_sheets_util.append_order_to_sheet",                # 萬一你有直接 import
-]
 
-if "pytest" in sys.modules:
-    for path in PATCH_PATHS:
-        try:
-            patch(path, dummy_append_order_to_sheet).start()
-        except Exception:
-            pass
 
 @pytest.fixture
 def app():
