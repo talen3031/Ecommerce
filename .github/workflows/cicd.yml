@@ -31,6 +31,7 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -48,15 +49,22 @@ jobs:
       - name: Create Google Sheet credential file
         run: |
           sudo mkdir -p /etc/secrets
-          echo "${{ secrets.GOOGLE_SHEET_CRED_JSON }}" | sudo tee /etc/secrets/google_sheet_cred.json > /dev/null
-      
+          cat << EOF | sudo tee /etc/secrets/google_sheet_cred.json > /dev/null
+          ${{ secrets.GOOGLE_SHEET_CRED_JSON }}
+          EOF
+
       - name: Show env (debug)
         run: env
+
+      - name: Debug:show Google Sheet JSON
+        run: cat /etc/secrets/google_sheet_cred.json
+
+      - name: Debug:check JSON validity
+        run: python3 -c "import json; json.load(open('/etc/secrets/google_sheet_cred.json'))"
 
       - name: Run pytest
         run: pytest
 
-# Job 2: build & push backend / frontend，只在測試通過後才執行
   build-and-push:
     runs-on: ubuntu-latest
     needs: test-backend  # 必須等 test-backend job 成功
@@ -73,8 +81,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       # Build and push backend image
+
       - name: Build and push backend
         uses: docker/build-push-action@v5
         with:
@@ -82,8 +90,7 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-backend:latest
-
-      # Build and push frontend image
+        # Build and push frontend image
       - name: Build and push frontend
         uses: docker/build-push-action@v5
         with:
@@ -93,4 +100,3 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-frontend:latest
           build-args: |
             REACT_APP_API_URL=${{ secrets.FRONTEND_API_URL }}
-
