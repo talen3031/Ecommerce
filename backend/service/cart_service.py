@@ -155,6 +155,8 @@ class CartService:
         message = CartService._update_cart_status_if_empty(user_id, cart)
 
         db.session.commit()
+        order_items = OrderItem.query.filter_by(order_id=order.id).all()
+        user = User.get_by_user_id(user_id)
         import traceback
         try:
             send_email_notify_order_created(order)
