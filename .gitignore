@@ -12,6 +12,7 @@ backend/ecommerce-465511-3a8c7b2b3a44.json
 backend/*.pyc
 backend/.ipynb_checkpoints
 backend/.env
+backend/etl_fakesoreapi.py
 # VSCode 之類設定
 .vscode/
 .env

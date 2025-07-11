@@ -46,22 +46,6 @@ jobs:
           pip install -r requirements.txt
         working-directory: ./backend
 
-      - name: Create Google Sheet credential file
-        run: |
-          sudo mkdir -p /etc/secrets
-          cat << EOF | sudo tee /etc/secrets/google_sheet_cred.json > /dev/null
-          ${{ secrets.GOOGLE_SHEET_CRED_JSON }}
-          EOF
-
-      - name: Show env (debug)
-        run: env
-
-      - name: Debug:show Google Sheet JSON
-        run: cat /etc/secrets/google_sheet_cred.json
-
-      - name: Debug:check JSON validity
-        run: python3 -c "import json; json.load(open('/etc/secrets/google_sheet_cred.json'))"
-
       - name: Run pytest
         run: pytest
 

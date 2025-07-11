@@ -1,20 +1,20 @@
-import requests
-import random
+import os
+import json
 from werkzeug.security import generate_password_hash
-from models import db, Category, Product, User, Cart, CartItem, Order, OrderItem
+from models import db, Category, Product, User
 from app import create_app
 
 app = create_app()
 app.app_context().push()
 
-if Category.query.first():
-    print("🟢 已有資料，跳過 ETL 載入")
-    exit(0)
-
+# 1. 載入 categories
 def etl_categories():
-    print("下載 categories...")
-    resp = requests.get("https://fakestoreapi.com/products/categories")
-    categories = resp.json()
+    print("載入 categories.json ...")
+    if not os.path.exists("categories.json"):
+        print("❌ 找不到 categories.json")
+        return {}
+    with open("categories.json", "r", encoding="utf-8") as f:
+        categories = json.load(f)
     cat_name_id_map = {}
     for cat in categories:
         category = Category.query.filter_by(name=cat).first()
@@ -26,11 +26,14 @@ def etl_categories():
     db.session.commit()
     return cat_name_id_map
 
+# 2. 載入本地產品
 def etl_local_products(json_path="products.json"):
-    with open(json_path, "r", encoding="utf8") as f:
+    if not os.path.exists(json_path):
+        print("❌ 找不到 products.json")
+        return
+    with open(json_path, "r", encoding="utf-8") as f:
         products = json.load(f)
     for prod in products:
-        # 你可以改寫唯一檢查條件
         if Product.query.filter_by(title=prod["title"], category_id=prod["category_id"]).first():
             continue
         p = Product(
@@ -42,32 +45,13 @@ def etl_local_products(json_path="products.json"):
         )
         db.session.add(p)
     db.session.commit()
-    print("已載入本地 products 資料")
+    print("✅ 已載入本地 products.json 資料")
 
+# 3. 新增一個 admin 用戶（必要時可自行擴充）
 def etl_users():
-    print("新增admin users...")
-    # resp = requests.get("https://fakestoreapi.com/users")
-    # users = resp.json()
-    # for u in users:
-    #     # 檢查 username、email
-    #     if User.query.filter_by(username=u['username']).first():
-    #         continue
-    #     if User.query.filter_by(email=u['email']).first():
-    #         continue
-    #     full_name = f"{u['name']['firstname']} {u['name']['lastname']}"
-    #     address = f"{u['address']['number']} {u['address']['street']}, {u['address']['city']}"
-    #     user = User(
-    #         username=u['username'],
-    #         email=u['email'],
-    #         password=generate_password_hash(u['password']),
-    #         full_name=full_name,
-    #         address=address,
-    #         phone=u['phone']
-    #     )
-    #     db.session.add(user)
-    # db.session.commit()
-    
-    user = User(
+    print("新增 admin 用戶...")
+    if not User.query.filter_by(username='talen3031').first():
+        user = User(
             username='talen3031',
             email="talen3031@gmail.com",
             password=generate_password_hash("talen168168"),
@@ -76,77 +60,17 @@ def etl_users():
             phone='0923956156',
             role='admin'
         )
-    db.session.add(user)
-    db.session.commit()
-    
-
-def etl_carts_orders():
-    print("下載 carts 與 orders...")
-    resp = requests.get("https://fakestoreapi.com/carts")
-    carts_api = resp.json()
-    cart_ids = [c['id'] for c in carts_api]
-    order_ids = set(random.sample(cart_ids, k=len(cart_ids)//2))
-
-    for cart_data in carts_api:
-        is_order = cart_data['id'] in order_ids
-        user_id = cart_data['userId']
-        date = cart_data['date']
-        items = cart_data['products']
-        # 插入 order
-        if is_order:
-            # 用 user_id、order_date 判斷是否重複（可依你邏輯調整唯一條件）
-            unique_order = Order.query.filter_by(user_id=user_id, order_date=date).first()
-            if unique_order:
-                continue
-            order = Order(user_id=user_id, order_date=date, total=0, status='paid')
-            db.session.add(order)
-            db.session.flush()
-            total = 0
-            # 插入 order_item
-            for item in items:
-                # 用 order_id、product_id 判斷唯一性
-                unique_oi = OrderItem.query.filter_by(order_id=order.id, product_id=item['productId']).first()
-                if unique_oi:
-                    continue
-                product = Product.query.filter_by(title=item.get('title', ''), id=item['productId']).first()
-                if not product:
-                    continue
-                subtotal = float(product.price) * item['quantity']
-                total += subtotal
-                db.session.add(OrderItem(
-                    order_id=order.id,
-                    product_id=product.id,
-                    quantity=item['quantity'],
-                    price=product.price
-                ))
-            order.total = total
-        # 插入 cart
-        else:
-            # 用 user_id、created_at 判斷是否重複（可依你邏輯調整唯一條件）
-            unique_cart = Cart.query.filter_by(user_id=user_id, created_at=date).first()
-            if unique_cart:
-                continue
-            cart = Cart(user_id=user_id, created_at=date, status='active')
-            db.session.add(cart)
-            db.session.flush()
-            # 插入 cart_item
-            for item in items:
-                unique_ci = CartItem.query.filter_by(cart_id=cart.id, product_id=item['productId']).first()
-                if unique_ci:
-                    continue
-                db.session.add(CartItem(
-                    cart_id=cart.id,
-                    product_id=item['productId'],
-                    quantity=item['quantity']
-                ))
-    db.session.commit()
+        db.session.add(user)
+        db.session.commit()
+        print("✅ 已新增 admin user")
+    else:
+        print("admin user 已存在")
 
 def main():
-    cat_name_id_map = etl_categories()
+    etl_categories()
     etl_local_products()
     etl_users()
-    #etl_carts_orders()
-    print("✅ 資料載入完成")
+    print("✅ 全部資料已載入完成")
 
 if __name__ == "__main__":
     main()
