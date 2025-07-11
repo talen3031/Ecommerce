@@ -75,8 +75,9 @@ def test_get_all_users_admin(client,admin_token):
     res = client.get('/users/all', headers={'Authorization': f'Bearer {admin_token}'})
     assert res.status_code == 200
     data = res.get_json()
-    assert isinstance(data, list)
-    assert any(u['username'] == 'admin' for u in data)
+    assert isinstance(data.get("users", []), list)
+    assert any(u['username'] == 'admin' for u in data.get("users", []))
+
 
 def test_recommend_for_user(client, new_user,admin_token):
     user = new_user("recomuser", "recomuser@example.com")

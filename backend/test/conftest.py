@@ -5,6 +5,10 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app import create_app
 from models import db,User,Category
+from unittest.mock import patch
+
+if "pytest" in sys.modules:
+    patch("utils.google_sheets_util.append_order_to_sheet", lambda *a, **k: None).start()
 
 @pytest.fixture
 def app():
