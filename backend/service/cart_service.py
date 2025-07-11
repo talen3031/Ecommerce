@@ -4,7 +4,6 @@ from exceptions import NotFoundError
 from service.audit_service import AuditService
 from service.discount_service import DiscountService
 from utils.notify_util import send_email_notify_order_created,send_line_notify_order_created
-from utils.google_sheets_util import append_order_to_sheet
 
 class CartService:
 
@@ -157,26 +156,15 @@ class CartService:
         db.session.commit()
         order_items = OrderItem.query.filter_by(order_id=order.id).all()
         user = User.get_by_user_id(user_id)
-        import traceback
-        try:
-            send_email_notify_order_created(order)
-            send_line_notify_order_created(user, order, order_items)
-            append_order_to_sheet(order, order_items)
-        except Exception as e:
-            print("==== Checkout 外部服務錯誤 traceback ====")
-            print(traceback.format_exc())
-            raise
-        # # ==== 寄信給user ========
-        # send_email_notify_order_created(order)
+    
+        # ==== 寄信給user ========
+        send_email_notify_order_created(order)
         
-        # # ==== line_bot 傳送訊息 給以綁定line的user ========
-        # user = User.get_by_user_id(user_id)
-        # order_items = OrderItem.query.filter_by(order_id=order.id).all()
-        # send_line_notify_order_created(user, order, order_items)
+        # ==== line_bot 傳送訊息 給以綁定line的user ========
+        send_line_notify_order_created(user, order, order_items)
         
-        # # ==== 同步 Google Sheet ====
-        # order_items = OrderItem.query.filter_by(order_id=order.id).all()
-        # append_order_to_sheet(order, order_items)
+        # ==== 同步 Google Sheet ====
+        #append_order_to_sheet(order, order_items)
 
         return {
             "message": message,
