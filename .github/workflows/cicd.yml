@@ -11,10 +11,26 @@ env:
   LINE_CHANNEL_SECRET: ${{ secrets.LINE_CHANNEL_SECRET }}
   LINE_LOGIN_CHANNEL_ID: ${{ secrets.LINE_LOGIN_CHANNEL_ID }}
   LINE_LOGIN_CHANNEL_SECRET: ${{ secrets.LINE_LOGIN_CHANNEL_SECRET }}
+  TEST_DB_NAME: Ecommerce_test
 
 jobs:
   test-backend:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: talen168168
+          POSTGRES_DB: Ecommerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
