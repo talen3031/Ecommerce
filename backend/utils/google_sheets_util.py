@@ -1,6 +1,8 @@
 import gspread
 from google.oauth2.service_account import Credentials
 import os
+import json
+
 # 設定參數（可移到 config 或 .env）
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "你的 Google Sheet ID")
 #本地端
@@ -66,17 +68,22 @@ def append_order_to_sheet(order, order_items=None):
         item_columns.extend([title, qty, price])
 
 
-    # 組 row
     row = [
-        getattr(order, "id", None) or order.get("id"),       # order_id
-        user_id,                                            # user_id
-        username,                                           # username
-        user_fullname,                                      # user_fullname
-        str(getattr(order, "order_date", None) or order.get("order_date")),  # order_date
-        float(getattr(order, "total", 0) or order.get("total", 0)),          # total
-        getattr(order, "status", None) or order.get("status"),               # status
-        discount_code,                                      # used_discount_code
-        discount_info,                                    # discount_info 
-        discount_amount,                                    # discount_amount
-    ] + item_columns
+        safe_val(getattr(order, "id", None) or order.get("id")),
+        safe_val(user_id),
+        safe_val(username),
+        safe_val(user_fullname),
+        safe_val(str(getattr(order, "order_date", None) or order.get("order_date"))),
+        safe_val(float(getattr(order, "total", 0) or order.get("total", 0))),
+        safe_val(getattr(order, "status", None) or order.get("status")),
+        safe_val(discount_code),
+        safe_val(discount_info),
+        safe_val(discount_amount),
+    ] + [safe_val(col) for col in item_columns]
+
     sheet.append_row(row, value_input_option="USER_ENTERED")
+
+def safe_val(val):
+    if isinstance(val, dict):
+        return json.dumps(val, ensure_ascii=False)
+    return val
