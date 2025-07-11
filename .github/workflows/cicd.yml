@@ -47,7 +47,8 @@ jobs:
 
       - name: Create Google Sheet credential file
         run: |
-          echo "${{ secrets.GOOGLE_SHEET_CRED_JSON }}" > backend/etc/secrets/ecommerce-465511-3a8c7b2b3a44.json
+          sudo mkdir -p /etc/secrets
+          echo "${{ secrets.GOOGLE_SHEET_CRED_JSON }}" | sudo tee /etc/secrets/google_sheet_cred.json > /dev/null
       
       - name: Show env (debug)
         run: env
