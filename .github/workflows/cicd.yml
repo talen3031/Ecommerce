@@ -1,57 +1,38 @@
-name: CI/CD Docker Multi-Service
+name: CICD
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
 
-# Job 1: 先測試後端功能（通過才能進入 build 階段）
+env:
+  LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+  LINE_CHANNEL_SECRET: ${{ secrets.LINE_CHANNEL_SECRET }}
+  LINE_LOGIN_CHANNEL_ID: ${{ secrets.LINE_LOGIN_CHANNEL_ID }}
+  LINE_LOGIN_CHANNEL_SECRET: ${{ secrets.LINE_LOGIN_CHANNEL_SECRET }}
+
 jobs:
   test-backend:
     runs-on: ubuntu-latest
-
-    # 啟動一個臨時 Postgres 資料庫服務
-    services:
-      db:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: talen168168
-          POSTGRES_DB: Ecommerce
-        ports:
-          - 5432:5432
-        # 健康檢查，確保 DB Ready 才跑 pytest
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
-    # 設定後端測試時需要用到的環境變數 CI流程DB採用 Ecommerce(本地測試採用Ecommerce_test)
-    env:
-      SQLALCHEMY_DATABASE_URI: postgresql://postgres:talen168168@localhost:5432/Ecommerce
-      JWT_SECRET_KEY: testkey
-      TEST_DB_NAME: Ecommerce
     steps:
-      - name: Checkout source code
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.8
+          python-version: "3.8"
 
-      - name: Install backend dependencies
+      - name: Install dependencies
         run: |
-          cd backend
-          pip install --no-cache-dir -r requirements.txt
-          pip install pytest
+          pip install -r requirements.txt
 
-      - name: Run backend pytest
-        run: |
-          cd backend
-          pytest
+      - name: Show env (debug)
+        run: env
+
+      - name: Run pytest
+        run: pytest
 
 # Job 2: build & push backend / frontend，只在測試通過後才執行
   build-and-push:

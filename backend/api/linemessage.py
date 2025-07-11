@@ -17,7 +17,8 @@ def line_login_callback():
     payload = {
         'grant_type': 'authorization_code',
         'code': code,
-        'redirect_uri': os.getenv('LINE_LOGIN_CALLBACK_URL'),
+        'redirect_uri': 'https://ecommerce-backend-latest-6fr5.onrender.com/linemessage/callback',
+        #'redirect_uri': os.getenv('LINE_LOGIN_CALLBACK_URL'),
         'client_id': os.getenv('LINE_LOGIN_CHANNEL_ID'),
         'client_secret': os.getenv('LINE_LOGIN_CHANNEL_SECRET'),
     }
