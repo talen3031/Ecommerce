@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { Button, Modal } from "antd";
+import { useNavigate } from "react-router-dom";
+import React from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 import ForgetForm from "./ForgetForm";
@@ -9,107 +10,56 @@ import CartList from "./CartList";
 import OrderList from "./OrderList";
 import UserProfile from "./UserProfile";
 import AdminPage from "./AdminPage";
+import EditProfile from "./EditProfile";
+import SidebarDrawer from "./SidebarDrawer";
+import LoginButton from "./LoginButton";
+import UserDetail from "./UserDetail"; // 記得import
+
+import 'antd/dist/reset.css';
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem("token"));
-  const [role, setRole] = useState(localStorage.getItem("role") || "");
-  const [tab, setTab] = useState("products");
-  const [page, setPage] = useState("login"); // login, register, forget
-  const [selectedProductId, setSelectedProductId] = useState(null);
-  const [showLogin, setShowLogin] = useState(false);
-
-  const handleLogout = () => {
-    localStorage.clear();
-    setLoggedIn(false);
-    setRole("");
-    setTab("products");
-    setSelectedProductId(null);
-    setPage("login");
-  };
-
-  let mainContent;
-  if (!loggedIn) {
-    // 未登入：只能逛商品
-    mainContent = !selectedProductId
-      ? <ProductList onSelectProduct={setSelectedProductId} />
-      : <ProductDetail productId={selectedProductId} onBack={() => setSelectedProductId(null)} />;
-  } else {
-    if (tab === "products") {
-      mainContent = !selectedProductId
-        ? <ProductList onSelectProduct={setSelectedProductId} />
-        : <ProductDetail productId={selectedProductId} onBack={() => setSelectedProductId(null)} />;
-    } else if (tab === "cart") {
-      mainContent = <CartList />;
-    } else if (tab === "orders") {
-      mainContent = <OrderList />;
-    } else if (tab === "profile") {
-      mainContent = <UserProfile />;
-    } else if (tab === "admin") {
-      mainContent = <AdminPage />;
-    }
-  }
+  const loggedIn = !!localStorage.getItem("token");
+  const role = localStorage.getItem("role") || "";
 
   return (
-    <div>
-      {/* 未登入時右上角顯示登入按鈕 */}
-      {!loggedIn && (
-        <div style={{ textAlign: "right", padding: "16px 32px" }}>
-          <Button type="primary" onClick={() => { setShowLogin(true); setPage("login"); }}>登入</Button>
-        </div>
-      )}
+     <BrowserRouter>
+      {/* 右上登入按鈕，只有未登入時出現 */}
+      {!loggedIn && <LoginButton />}
 
-      {/* 已登入才有主導覽 */}
-      {loggedIn && (
-        <div style={{ margin: "24px 0", textAlign: "center" }}>
-          <Button onClick={() => { setTab("products"); setSelectedProductId(null); }}>商品列表</Button>
-          <Button onClick={() => setTab("cart")}>購物車清單</Button>
-          <Button onClick={() => setTab("orders")}>訂單查詢</Button>
-          <Button onClick={() => setTab("profile")}>會員資訊</Button>
-          {role === "admin" && (
-            <Button onClick={() => setTab("admin")}>管理後台</Button>
-          )}
-          <Button danger onClick={handleLogout}>登出</Button>
-        </div>
-      )}
+      {/* SidebarDrawer 只有登入時出現 */}
+      {loggedIn && <SidebarDrawer loggedIn={loggedIn} role={role} />}
 
-      {/* 主內容區 */}
-      <div>
-        {mainContent}
+      {/* 主內容往右偏移（空出 Sidebar 空間），未登入時 marginLeft 設0 */}
+      <div >
+        <Routes>
+          <Route path="/" element={<ProductListWrapper />} />
+          <Route path="/products" element={<ProductListWrapper />} />
+          <Route path="/products/:id" element={<ProductDetail />} />
+
+          <Route path="/login" element={<LoginForm />} />
+          <Route path="/register" element={<RegisterForm />} />
+          <Route path="/forget" element={<ForgetForm />} />
+
+          <Route path="/cart" element={loggedIn ? <CartList /> : <Navigate to="/login" />} />
+          <Route path="/orders" element={loggedIn ? <OrderList /> : <Navigate to="/login" />} />
+          <Route path="/orders/:orderId" element={loggedIn ? <OrderList /> : <Navigate to="/login" />} />
+
+          <Route path="/profile" element={loggedIn ? <UserProfile /> : <Navigate to="/login" />} />
+          <Route path="/profile/edit" element={loggedIn ? <EditProfile /> : <Navigate to="/login" />} />
+          <Route path="/admin/users/:id" element={<UserDetail />} />
+          <Route path="/admin" element={loggedIn && role === "admin" ? <AdminPage /> : <Navigate to="/login" />} />
+
+          <Route path="*" element={<div>404 Not Found</div>} />
+        </Routes>
       </div>
-
-      {/* 登入相關 Modal */}
-      <Modal
-        open={showLogin}
-        onCancel={() => setShowLogin(false)}
-        footer={null}
-        title="會員登入"
-      >
-        {page === "login" && (
-          <LoginForm
-            onLogin={() => {
-              setLoggedIn(true);
-              setRole(localStorage.getItem("role") || "");
-              setTab("products");
-              setShowLogin(false);
-            }}
-            onGoRegister={() => setPage("register")}
-            onGoForget={() => setPage("forget")}
-          />
-        )}
-        {page === "register" && (
-          <RegisterForm
-            onRegisterSuccess={() => setPage("login")}
-            onBackToLogin={() => setPage("login")}
-          />
-        )}
-        {page === "forget" && (
-          <ForgetForm
-            onBackToLogin={() => setPage("login")}
-          />
-        )}
-      </Modal>
-    </div>
+    </BrowserRouter>
   );
+}
+
+// 商品列表頁（點擊商品可導到詳情頁）
+function ProductListWrapper() {
+  const navigate = useNavigate();
+  return <ProductList onSelectProduct={id => navigate(`/products/${id}`)} />;
 }
 
 export default App;

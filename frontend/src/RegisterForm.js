@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { Form, Input, Button, message } from "antd";
 import api from "./api";
+import { useNavigate } from "react-router-dom";
 
-function RegisterForm({ onRegisterSuccess, onBackToLogin }) {
+function RegisterForm() {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      const res = await api.post("/auth/register", values);
+      await api.post("/auth/register", values);
       message.success("註冊成功，請登入！");
-      onRegisterSuccess && onRegisterSuccess();
+      navigate("/login");
     } catch (err) {
       message.error("註冊失敗：" + (err.response?.data?.error || err.message));
     }
@@ -40,7 +42,7 @@ function RegisterForm({ onRegisterSuccess, onBackToLogin }) {
           <Button htmlType="submit" type="primary" loading={loading} block>註冊</Button>
         </Form.Item>
         <Form.Item>
-          <Button onClick={onBackToLogin} block>返回登入</Button>
+          <Button onClick={() => navigate("/login")} block>返回登入</Button>
         </Form.Item>
       </Form>
     </div>

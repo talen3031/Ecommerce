@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Table, Input, Button, Spin, Space, message } from "antd";
 import api from "./api";
+import { useNavigate } from "react-router-dom";
 
 function UserList() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchVal, setSearchVal] = useState("");
   const [pageInfo, setPageInfo] = useState({ page: 1, total: 0, pageSize: 10 });
+  const navigate = useNavigate();
 
   // 取得會員清單
   const fetchUsers = (page = 1, keyword = "") => {
@@ -15,7 +17,6 @@ function UserList() {
     if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
     api.get(url)
       .then(res => {
-        // 你 API 若是 {users: [...], page:1, total:99}，就要這樣寫
         setUsers(res.data.users || []);
         setPageInfo({
           page: res.data.page || 1,
@@ -37,6 +38,12 @@ function UserList() {
 
   // 分頁切換
   const handlePageChange = (page) => fetchUsers(page, searchVal);
+
+  // 點擊 row 可跳轉到會員詳細頁
+  const handleRowClick = (record) => {
+    // 假設未來有 /admin/users/:id 詳細頁
+    navigate(`/admin/users/${record.id}`);
+  };
 
   const columns = [
     { title: "會員ID", dataIndex: "id", sorter: true },
@@ -70,6 +77,11 @@ function UserList() {
             total: pageInfo.total,
             onChange: handlePageChange
           }}
+          // 可點擊 row 進入詳細頁
+          onRow={record => ({
+            onClick: () => handleRowClick(record)
+          })}
+          style={{ cursor: "pointer" }}
         />
       </Spin>
     </div>

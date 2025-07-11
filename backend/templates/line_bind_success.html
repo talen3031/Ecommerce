@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>LINE 綁定成功 | Ecommerce</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+TC:400,700&display=swap">
+  <style>
+    body {
+      background: #f4f7fa;
+      font-family: 'Noto Sans TC', 'Segoe UI', Arial, sans-serif;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column; min-height: 100vh;
+      align-items: center; justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 2px 16px #0001;
+      padding: 2.2rem 2rem 2rem 2rem;
+      max-width: 370px;
+      width: 100%;
+      margin-top: 40px;
+      text-align: center;
+      animation: slideUp 0.8s cubic-bezier(.25,.8,.25,1);
+    }
+    @keyframes slideUp {
+      0% { transform: translateY(60px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .logo {
+      width: 80px;
+      margin-bottom: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #0001;
+    }
+    h2 {
+      margin: 0 0 18px 0;
+      color: #2db400;
+      font-weight: 700;
+      font-size: 1.6rem;
+    }
+    .user-info {
+      font-size: 1.08rem;
+      margin-bottom: 20px;
+      color: #222b;
+    }
+    .success-badge {
+      background: linear-gradient(90deg,#25e155,#2db400 80%);
+      color: #fff;
+      display: inline-block;
+      border-radius: 8px;
+      padding: 0.4em 1.1em;
+      font-weight: 700;
+      margin-bottom: 12px;
+      font-size: 1.03rem;
+      letter-spacing: 0.5px;
+      box-shadow: 0 1px 5px #2db40033;
+    }
+    .back-btn {
+      margin-top: 14px;
+      background: #2db400;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 0.7em 2.2em;
+      font-size: 1.09rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+      box-shadow: 0 2px 8px #2db40015;
+    }
+    .back-btn:hover { background: #24a800; }
+    @media (max-width: 480px) {
+      .card { max-width: 96vw; padding: 1.2rem 1rem 1.4rem 1rem; }
+      h2 { font-size: 1.25rem;}
+      .logo { width: 62px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- LOGO圖檔建議放在 static 目錄或用 CDN 連結 -->
+    <!--img src="{{ url_for('static', filename='logo.png') }}" alt="Ecommerce Logo" class="logo"-->
+    <div class="success-badge">LINE 綁定成功</div>
+    <h2>Hi {{ user.username }}！</h2>
+    <div class="user-info">
+      你已成功將本站帳號<br>
+      與 LINE 帳號「<b>{{ display_name }}</b>」完成綁定 🎉
+    </div>
+    <button class="back-btn" onclick="window.location.href='/' ">回Ecommerce網站</button>
+  </div>
+</body>
+</html>

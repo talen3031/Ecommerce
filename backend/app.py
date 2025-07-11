@@ -8,11 +8,14 @@ from api.carts import carts_bp
 from api.orders import orders_bp
 from api.auth import auth_bp
 from api.upload import upload_bp
+from api.discount_codes import discount_bp
+from api.linemessage import linemessage_bp
 from exceptions import NotFoundError, DuplicateError, UnauthorizedError, ForbiddenError
 from flask_jwt_extended import JWTManager
 from flasgger import Swagger
 from flask_cors import CORS
 import os
+
 swagger_template = {
     "swagger": "2.0",
     "info": {
@@ -34,7 +37,8 @@ def create_app(test_config=None):
     app = Flask(__name__)
     CORS(app, supports_credentials=True)
     # 預設用正式資料庫
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI_LOCALHOST")
+    #app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = os.environ.get("JWT_SECRET_KEY", "your_default_jwt_key")
     Swagger(app, template=swagger_template)
@@ -75,13 +79,17 @@ def create_app(test_config=None):
     app.register_blueprint(orders_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(upload_bp)
+    app.register_blueprint(discount_bp)
+    app.register_blueprint(linemessage_bp)
     JWTManager(app)
 
     return app
 
 # 只在本機執行才會啟動 Flask 伺服器
 if __name__ == '__main__':
+
+    app = create_app()
+    print("注意!!!!!!!!!!!!!!!!!!!!!!!!  DB =", app.config["SQLALCHEMY_DATABASE_URI"])
     print("Cloudinary =", os.getenv("CLOUDINARY_CLOUD_NAME"))
     print("CLOUDINARY_API_KEY =", os.getenv("CLOUDINARY_API_KEY"))
-    app = create_app()
     app.run(host="0.0.0.0", port=5000, debug=True)

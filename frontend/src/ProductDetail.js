@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Card, Spin, message, Button, Image, Tag, InputNumber, Row } from "antd";
+import { Card, Spin, message, Button, InputNumber, Row, Modal } from "antd";
 import api from "./api";
+import { useNavigate, useParams } from "react-router-dom";
 
 const categoryMap = {
   1: "3C產品",
@@ -9,12 +10,18 @@ const categoryMap = {
   4: "女生衣服"
 };
 
-function ProductDetail({ productId, onBack }) {
+function ProductDetail() {
+  const { id } = useParams();
+  const productId = id;
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cartLoading, setCartLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [currentImage, setCurrentImage] = useState(0);
+
+  // Modal 狀態
+  const [modalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!productId) return;
@@ -22,7 +29,7 @@ function ProductDetail({ productId, onBack }) {
     api.get(`/products/${productId}`)
       .then(res => {
         setProduct(res.data);
-        setCurrentImage(0); // 每次進入詳細頁都回到第一張
+        setCurrentImage(0);
       })
       .catch(() => message.error("查詢商品失敗"))
       .finally(() => setLoading(false));
@@ -47,132 +54,137 @@ function ProductDetail({ productId, onBack }) {
     setCartLoading(false);
   };
 
-  const handlePrevImage = () => {
-    setCurrentImage((prev) => prev > 0 ? prev - 1 : (product.images.length - 1));
-  };
-
-  const handleNextImage = () => {
-    setCurrentImage((prev) => prev < product.images.length - 1 ? prev + 1 : 0);
-  };
-
   if (!productId) return null;
 
   return (
-    <div style={{ maxWidth: 540, margin: "40px auto" }}>
+    <div style={{
+      maxWidth: 440, margin: "44px auto", background: "#fff",
+      borderRadius: 16, border: "1.5px solid #e2e2e2",
+      boxShadow: "0 2px 32px #0000", padding: "36px 20px 24px 20px", position: "relative",
+      fontFamily: "'Inter', 'Roboto', 'sans-serif'"
+    }}>
       <Spin spinning={loading}>
         {product && (
-          <Card
-            bordered={false}
-            bodyStyle={{ padding: 32, paddingBottom: 24 }}
-            style={{ borderRadius: 16, boxShadow: "0 2px 16px #eee" }}
-            extra={<Button onClick={onBack}>返回</Button>}
-          >
-            {/* 單張圖片加切換按鈕 */}
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginBottom: 32 }}>
-              {product.images && product.images.length > 0 ? (
-                <>
-                  <Button
-                    onClick={handlePrevImage}
-                    disabled={product.images.length <= 1}
-                  >
-                    ←
-                  </Button>
-                  <Image
-                    src={product.images[currentImage]}
-                    width={300}
-                    height={300}
-                    style={{ objectFit: "cover", borderRadius: 12 }}
-                    alt={`商品圖${currentImage + 1}`}
-                  />
-                  <Button
-                    onClick={handleNextImage}
-                    disabled={product.images.length <= 1}
-                  >
-                    →
-                  </Button>
-                </>
-              ) : (
-                <div style={{ width: 300, height: 300, background: "#f5f5f5", borderRadius: 12, lineHeight: "300px", textAlign: "center", color: "#bbb" }}>無圖</div>
+          <div>
+            <div style={{
+              display: "flex", flexDirection: "column", alignItems: "center"
+            }}>
+              {/* 主圖（可點擊放大） */}
+              <div style={{
+                width: "100%", display: "flex", justifyContent: "center",
+                alignItems: "center", background: "#f4f4f4", borderRadius: 12,
+                minHeight: 260, marginBottom: 18, border: "1px solid #ececec"
+              }}>
+                <img
+                  src={product.images?.[currentImage]}
+                  alt="商品圖"
+                  style={{
+                    maxWidth: 340, maxHeight: 260, borderRadius: 12,
+                    cursor: "zoom-in", opacity: 0.97, transition: "opacity 0.12s"
+                  }}
+                  title="點擊放大"
+                  onClick={() => setModalOpen(true)}
+                />
+              </div>
+              {/* 縮圖列 */}
+              {product.images && product.images.length > 1 && (
+                <div style={{
+                  display: "flex", gap: 10, marginBottom: 14, justifyContent: "center"
+                }}>
+                  {product.images.map((img, idx) => (
+                    <img
+                      key={img + idx}
+                      src={img}
+                      alt={"縮圖" + (idx + 1)}
+                      style={{
+                        width: 48, height: 48, objectFit: "cover", borderRadius: 6,
+                        border: idx === currentImage ? "2.5px solid #222" : "1.5px solid #ccc",
+                        cursor: "pointer", filter: idx === currentImage ? "" : "grayscale(0.7)",
+                        opacity: idx === currentImage ? 1 : 0.66, transition: "all .14s"
+                      }}
+                      onClick={() => setCurrentImage(idx)}
+                    />
+                  ))}
+                </div>
               )}
-            </div>
-            {/* 圖片下方顯示當前張數 */}
-            {product.images && product.images.length > 1 && (
-              <div style={{ textAlign: "center", color: "#888", marginBottom: 8, fontSize: 15 }}>
-                {currentImage + 1} / {product.images.length}
-              </div>
-            )}
 
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontWeight: 700, fontSize: 26, marginBottom: 8 }}>
+              {/* 商品名稱 */}
+              <div style={{
+                fontWeight: 700, fontSize: 27, color: "#222",
+                letterSpacing: 0.2, margin: "8px 0 10px 0"
+              }}>
                 {product.title}
-                {product.on_sale && <Tag color="red" style={{ marginLeft: 12 }}>特價</Tag>}
               </div>
-
-              <div style={{ marginBottom: 12 }}>
+              {/* 價格 */}
+              <div style={{ marginBottom: 13 }}>
                 {product.on_sale ? (
                   <>
-                    <span style={{ color: "#fa541c", fontWeight: "bold", fontSize: 22 }}>NT${product.sale_price}</span>
-                    <span style={{ color: "#888", marginLeft: 10, textDecoration: "line-through", fontSize: 16 }}>NT${product.price}</span>
+                    <span style={{ color: "#111", fontWeight: "bold", fontSize: 23 }}>NT${product.sale_price}</span>
+                    <span style={{ color: "#b2b2b2", marginLeft: 12, textDecoration: "line-through", fontSize: 16 }}>NT${product.price}</span>
                   </>
                 ) : (
-                  <span style={{ fontWeight: "bold", fontSize: 22 }}>NT${product.price}</span>
+                  <span style={{ fontWeight: 600, fontSize: 21, color: "#1a1a1a" }}>NT${product.price}</span>
                 )}
               </div>
-
-              <div style={{ color: "#999", fontSize: 16, marginBottom: 8 }}>
-                分類：{categoryMap[product.category_id] || product.category_id}
+              <div style={{ color: "#909090", fontSize: 15, marginBottom: 13 }}>
+                {categoryMap[product.category_id] || product.category_id}
               </div>
-
-              {/* 美化商品描述 */}
-              <div
-                style={{
-                  background: "#fafbfc",
-                  borderRadius: 10,
-                  padding: "18px 20px",
-                  margin: "16px 0 24px 0",
-                  color: "#444",
-                  fontSize: 17,
-                  lineHeight: 2,
-                  boxShadow: "0 1px 6px #f0f1f3",
-                  textAlign: "left",
-                  maxHeight: 180,
-                  overflowY: "auto",
-                  whiteSpace: "pre-line",
-                  letterSpacing: 0.5
-                }}
-              >
-                <div style={{fontWeight: 600, fontSize: 18, marginBottom: 4, color: "#2070ca", letterSpacing:1}}>
-                  <span role="img" aria-label="desc" style={{marginRight:6}}>📦</span>
-                  Description...
-                </div>
-                <div style={{textIndent: "1em"}}>
-                  {product.description}
-                </div>
+              {/* 描述 */}
+              <div style={{
+                background: "#f7f7f7",
+                borderRadius: 9,
+                padding: "14px 13px",
+                margin: "13px 0 19px 0",
+                color: "#444", fontSize: 15.5, lineHeight: 1.95, boxShadow: "0 0px 0px #f0f1f3",
+                maxHeight: 120, overflowY: "auto", whiteSpace: "pre-line", width: "100%"
+              }}>
+                {product.description}
               </div>
-
-
-              <div style={{ marginBottom: 20 }}>
+              {/* 數量與加入購物車 */}
+              <div style={{ marginBottom: 12 }}>
                 <Row justify="center" align="middle">
                   <InputNumber
                     min={1}
                     max={99}
                     value={quantity}
                     onChange={val => setQuantity(val)}
-                    style={{ width: 100, marginRight: 20 }}
+                    style={{ width: 80, marginRight: 13 }}
                   />
                   <Button
                     type="primary"
                     size="large"
                     loading={cartLoading}
                     onClick={handleAddToCart}
-                    style={{ minWidth: 140 }}
+                    style={{
+                      minWidth: 130, background: "#222", borderRadius: 8,
+                      border: "none", fontWeight: 500, fontSize: 16, boxShadow: "0 1px 5px #2221"
+                    }}
                   >
                     加入購物車
                   </Button>
                 </Row>
               </div>
             </div>
-          </Card>
+
+            {/* 單純大圖 Modal（只有一張圖） */}
+            <Modal
+              open={modalOpen}
+              onCancel={() => setModalOpen(false)}
+              footer={null}
+              bodyStyle={{
+                display: "flex", alignItems: "center", justifyContent: "center", background: "#fff"
+              }}
+              centered
+            >
+              <img
+                src={product.images?.[currentImage]}
+                alt="大圖預覽"
+                style={{
+                  maxHeight: 500, maxWidth: "95vw", width: "auto", borderRadius: 10
+                }}
+              />
+            </Modal>
+          </div>
         )}
       </Spin>
     </div>

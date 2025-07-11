@@ -1,8 +1,10 @@
-from models import db, Cart, CartItem, Product,Order,OrderItem
+from models import db, Cart, CartItem, Product,Order,OrderItem,User
 from datetime import datetime
 from exceptions import NotFoundError
 from service.audit_service import AuditService
-from utils.notify_util import notify_user_order_created
+from service.discount_service import DiscountService
+from utils.notify_util import send_email_notify_order_created,send_line_notify_order_created
+from utils.google_sheets_util import append_order_to_sheet
 
 class CartService:
 
@@ -91,44 +93,89 @@ class CartService:
         return cart_item,old_qty
 
     @staticmethod
-    def checkout_cart(user_id, items_to_checkout):
+    def checkout_cart(user_id, items_to_checkout, discount_code=None):
         if not items_to_checkout or not isinstance(items_to_checkout, list):
             raise ValueError("Must provide items to checkout")
-        # validate user cart == 'active'
+
         cart = CartService._get_active_cart(user_id)
-        # validate cart_item compare to the items_to_checkout
+
+        #驗證 cart_item 跟 items_to_checkout(例如 items_to_checkout 的quantity 不能大於 cart 中的 quantity) 
         CartService._validate_cart_items(cart, items_to_checkout)
 
+        # 1. 計算原價總金額（不新增 order_item，只用來驗證金額）
+        total = CartService._caculate_items_to_checkout(items_to_checkout, order=None, user_id=user_id, cart=cart)
+
+        discount_amount = 0
+        discount_obj = None
+
+        # 2. 折扣碼驗證（失敗時直接 raise，不建立訂單）
+        if discount_code:
+            ok, msg, dc, discounted_total, discount_amount = DiscountService.apply_discount_code(
+                user_id, cart, discount_code, items_to_checkout
+            )
+            if not ok:
+                raise ValueError(f"折扣碼不可用: {msg}")
+            total = discounted_total
+            discount_obj = dc
+        
+        # 3. 通過所有驗證，開始正式建立訂單
         order = CartService._create_order(user_id)
-        total = 0
 
-        for item in items_to_checkout:
-            product_id = item.get("product_id")
-            quantity = item.get("quantity", 1)
-            product = db.session.get(Product, product_id)
-            
-            price = product.get_final_price() if product else 0
-            total += price * quantity
-            
-            #add  order item
-            CartService._add_order_item(order.id, product_id, quantity, price)
-            # handle rest of cart_item
-            CartService._handle_cart_item_on_checkout(user_id, cart, product_id, quantity)
+        # 4. 寫入訂單商品（這時才寫入 DB）
+        CartService._caculate_items_to_checkout(items_to_checkout, order, user_id, cart)
+     
 
+        # 5. 寫入訂單金額與折扣碼資訊
         order.total = total
-        #if cart become empty set cart status = check_out
+        order.discount_code_id = discount_obj.id if discount_obj else None
+        order.discount_amount = float(discount_amount) if discount_obj else None
+
+
+        #日誌寫入（包含所有商品資料）
+        order_items_str = ", ".join([f"{item['product_id']} x {item['quantity']}" for item in items_to_checkout])
+        AuditService.log(
+            user_id=user_id,
+            action='add_order_items',
+            target_type='order',
+            target_id=order.id,
+            description=f"Order {order.id} add items: {order_items_str}"
+        )
+
+        # 6. consume 折扣碼（正式寫入使用紀錄）
+        if discount_code:
+            DiscountService.consume_discount_code(user_id, discount_code)
+            # 日誌寫入
+            AuditService.log(
+                user_id=user_id,
+                action='use',  
+                target_type='discount_code',
+                target_id = discount_obj.id,
+                description = f"user {user_id} use discount_code {discount_obj.id}"
+            )
         message = CartService._update_cart_status_if_empty(user_id, cart)
 
         db.session.commit()
+
+        # ==== 寄信給user ========
+        send_email_notify_order_created(order)
         
-        notify_user_order_created(order)
+        # ==== line_bot 傳送訊息 給以綁定line的user ========
+        user = User.get_by_user_id(user_id)
+        order_items = OrderItem.query.filter_by(order_id=order.id).all()
+        send_line_notify_order_created(user, order, order_items)
         
+        # ==== 同步 Google Sheet ====
+        order_items = OrderItem.query.filter_by(order_id=order.id).all()
+        append_order_to_sheet(order, order_items)
+
         return {
             "message": message,
             "order_id": order.id,
-            "total": float(total)
+            "total": float(total),
+            "discount_amount": float(discount_amount) if discount_code else 0,
+            "discount_code": discount_code if discount_code else None
         }
-    
+
     @staticmethod
     def _get_active_cart(user_id):
         cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
@@ -178,7 +225,7 @@ class CartService:
             target_id=cart_item.id,
             description=desc
         )
-
+    # 
     @staticmethod
     def _update_cart_status_if_empty(user_id, cart):
         if len(cart.cart_items) == 0:
@@ -194,3 +241,21 @@ class CartService:
             return "all checkout success"
         else:
             return "partial checkout success"
+    @staticmethod
+    def _caculate_items_to_checkout(items_to_checkout,order,user_id,cart):
+        total = 0 
+        for item in items_to_checkout:
+            product_id = item.get("product_id")
+            quantity = item.get("quantity", 1)
+            product = db.session.get(Product, product_id)
+            
+            price = product.get_final_price() if product else 0
+            total += price * quantity
+            if order:
+                #add  order item
+                CartService._add_order_item(order.id, product_id, quantity, price)
+                # handle rest of cart_item
+                CartService._handle_cart_item_on_checkout(user_id, cart, product_id, quantity)
+        print("_caculate_items_to_checkout .....total=",total)
+        return total
+        

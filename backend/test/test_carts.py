@@ -5,7 +5,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app import create_app
 from models import Product, db, Order, OrderItem,Category,User
-
+from datetime import datetime
 
 @pytest.fixture(autouse=True)
 def setup_products(app):
@@ -27,6 +27,27 @@ def user_token_and_id(client):
     token = login_res.get_json()['access_token']
     user_id = login_res.get_json()['user_id']
     return token, user_id
+
+@pytest.fixture
+def discount_code():
+    from models import DiscountCode
+    code = "TESTCODE"
+    dc = DiscountCode(
+        code=code,
+        discount=0.8,        # 8折
+        amount=None,         # 固定金額折抵測試時可改成100
+        product_id=None,     # 全品項可用
+        min_spend=100,       # 滿百可用
+        valid_from=datetime(2000, 1, 1),
+        valid_to=datetime(2099, 12, 31),
+        usage_limit=10,
+        per_user_limit=2,
+        description="測試折扣碼",
+        is_active=True
+    )
+    db.session.add(dc)
+    db.session.commit()
+    return dc
 
 def test_cart_crud_flow(client, user_token_and_id):
     token, user_id = user_token_and_id
@@ -146,3 +167,46 @@ def test_cart_collaborative_recommend(client, user_token_and_id):
     assert res.status_code == 200
     data = res.get_json()
     assert any(p['title'] == collab_title for p in data)
+    
+def test_discount_code_checkout_flow(client, user_token_and_id, discount_code):
+    token, user_id = user_token_and_id
+
+    # 1. 先加商品到購物車
+    res = client.post(
+        f'/carts/{user_id}', 
+        json={'product_id': 1, 'quantity': 2},
+        headers={'Authorization': f'Bearer {token}'}
+    )
+    assert res.status_code == 200
+
+    # 2. 前端在購物車頁輸入折扣碼查詢折扣後金額
+    res = client.post(
+        f'/carts/{user_id}/apply_discount', 
+        json={'code': discount_code.code},
+        headers={'Authorization': f'Bearer {token}'}
+    )
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["success"] is True
+    assert data["discounted_total"] == 160   # 原價100*2=200，8折160
+    assert data["discount_amount"] == 40     # 折抵40元
+
+    # 3. 直接用折扣碼結帳
+    res = client.post(
+        f'/carts/{user_id}/checkout',
+        json={
+            'items': [{'product_id': 1, 'quantity': 2}],
+            'discount_code': discount_code.code
+        },
+        headers={'Authorization': f'Bearer {token}'}
+    )
+    assert res.status_code == 200
+    result = res.get_json()
+    assert result["discount_code"] == discount_code.code
+    assert result["total"] == 160
+    assert result["discount_amount"] == 40
+    assert "order_id" in result
+
+    # 4. 再查一次購物車，應為空
+    res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    assert res.get_json()['items'] == []

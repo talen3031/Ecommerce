@@ -4,8 +4,8 @@ from models import db, Cart, CartItem, Product, Order, OrderItem
 from datetime import datetime
 from service.cart_service import CartService
 from service.audit_service import AuditService
-from service.product_service import ProductService
-
+from service.product_service import ProductService 
+from service.discount_service import DiscountService
 
 carts_bp = Blueprint('carts', __name__, url_prefix='/carts')
 #查詢購物車
@@ -416,6 +416,7 @@ def checkout_cart(user_id):
 
     data = request.json or {}
     items_to_checkout = data.get("items")
+    discount_code = data.get("discount_code")
 
     # 若傳入'all' or 'ALL'
     if isinstance(items_to_checkout, str) and items_to_checkout.lower() == "all":
@@ -437,8 +438,8 @@ def checkout_cart(user_id):
         return jsonify({"error": "Cart is empty"}), 400
 
     # 執行結帳
-    result = CartService.checkout_cart(user_id=user_id, items_to_checkout=items_to_checkout)
-
+    result = CartService.checkout_cart(user_id=user_id, items_to_checkout=items_to_checkout,discount_code=discount_code)
+    
     # 日誌寫入
     AuditService.log(
         user_id=current_user,
@@ -574,3 +575,64 @@ def recommend_cart_collaborative(user_id):
     limit = request.args.get('limit', 5, type=int)
     products = ProductService.recommend_for_cart_collaborative(user_id, limit)
     return jsonify([p.to_dict() for p in products])
+
+@carts_bp.route('/<int:user_id>/apply_discount', methods=['POST'])
+@jwt_required()
+def apply_discount(user_id):
+    """
+    在購物車套用折扣碼
+    ---
+    tags:
+      - carts
+    parameters:
+      - in: path
+        name: user_id
+        type: integer
+        required: true
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            code:
+              type: string
+              example: SPRINGSALE
+    responses:
+      200:
+        description: 套用結果
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            message:
+              type: string
+            discounted_total:
+              type: number
+            discount_amount:
+              type: number
+      400:
+        description: 參數錯誤
+    """
+    current_user = get_jwt_identity()
+    if int(current_user) != user_id:
+        return jsonify({"error": "Permission denied"}), 403
+
+    code = request.json.get("code")
+    if not code:
+        return jsonify({"error": "請輸入折扣碼"}), 400
+
+    cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
+    if not cart or not cart.cart_items:
+        return jsonify({"error": "購物車為空"}), 400
+
+    ok, msg, dc, discounted_total, discount_amount = DiscountService.apply_discount_code(user_id, cart, code)
+    
+    return jsonify({
+        "success": ok,
+        "message": msg,
+        "discounted_total": discounted_total,
+        "discount_amount": discount_amount,
+        "discount_code": dc.to_dict() if dc else None
+    })

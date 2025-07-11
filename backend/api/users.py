@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity,get_jwt
 from api.decorate import admin_required
 from models import db, User 
 from service.user_service import UserService 
@@ -62,8 +62,13 @@ def get_user(user_id):
     # 只允許本人查自己
     
     current_user = get_jwt_identity()
-    if int(current_user) != user_id:
+    claims = get_jwt()
+    role = claims.get("role")  # 假設 JWT 內容有 role
+
+    # 如果不是 admin，且查的不是自己，就拒絕
+    if role != "admin" and int(current_user) != user_id:
         return jsonify({"error": "you only can search your own information"}), 403
+
 
     user = User.get_by_user_id(user_id=user_id)
 
@@ -72,54 +77,86 @@ def get_user(user_id):
     else:
         return jsonify({"error": "User not found"}), 404
     
-
-#查詢所有使用者
 @users_bp.route('/all', methods=['GET'])
 @admin_required
 def get_all_user():
     """
-    查詢全部用戶資訊（需管理員）
+    查詢全部用戶資訊（需管理員，支援分頁）
     ---
     tags:
       - users
     security:
       - Bearer: []
     parameters:
-      - in: path
-        name: user_id
+      - in: query
+        name: page
         type: integer
-        required: true
-        description: 用戶ID
+        required: false
+        default: 1
+        description: 頁碼
+      - in: query
+        name: per_page
+        type: integer
+        required: false
+        default: 10
+        description: 每頁筆數
     responses:
       200:
         description: 用戶資訊列表
         schema:
           type: object
           properties:
-            id:
+            users:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  username:
+                    type: string
+                    example: "john_doe"
+                  email:
+                    type: string
+                    example: "john@example.com"
+                  role:
+                    type: string
+                    example: "user"
+                  full_name:
+                    type: string
+                  address:
+                    type: string
+                  phone:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+                    example: "2024-03-20T10:00:00Z"
+            total:
+              type: integer
+              example: 100
+            page:
               type: integer
               example: 1
-            username:
-              type: string
-              example: "john_doe"
-            email:
-              type: string
-              example: "john@example.com"
-            role:
-              type: string
-              example: "user"
-            created_at:
-              type: string
-              format: date-time
-              example: "2024-03-20T10:00:00Z"
+            per_page:
+              type: integer
+              example: 10
+            pages:
+              type: integer
+              example: 10
     """
-    users = User.query.all()
-    result = []
-    
-    for user in users:
-        result.append(user.to_dict())
-    
-    return jsonify(result)
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    users_page = User.query.order_by(User.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    result = [user.to_dict() for user in users_page.items]
+    return jsonify({
+        "users": result,
+        "total": users_page.total,
+        "page": users_page.page,
+        "per_page": users_page.per_page,
+        "pages": users_page.pages
+    })
 
 # 修改會員資料
 @users_bp.route('/<int:user_id>', methods=['PATCH'])

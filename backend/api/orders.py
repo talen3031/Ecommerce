@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from service.order_service import OrderService
 from service.audit_service import AuditService
+from api.decorate import admin_required
+from models import Order,User
 
 orders_bp = Blueprint('orders', __name__, url_prefix='/orders')
 
@@ -101,6 +103,64 @@ def get_order_detail(order_id):
     detail = OrderService.get_order_detail(order_id)
 
     return jsonify(detail)
+
+@orders_bp.route('/all', methods=['GET'])
+@admin_required
+def get_all_orders():
+    """
+    查詢所有訂單（管理員）
+    ---
+    tags:
+      - Orders
+    security:
+      - Bearer: []
+    parameters:
+      - name: page
+        in: query
+        type: integer
+        required: false
+        default: 1
+        description: 頁碼
+      - name: per_page
+        in: query
+        type: integer
+        required: false
+        default: 10
+        description: 每頁筆數
+    responses:
+      200:
+        description: 訂單列表
+        schema:
+          type: object
+          properties:
+            orders:
+              type: array
+              items:
+                type: object
+            total:
+              type: integer
+            page:
+              type: integer
+            per_page:
+              type: integer
+            pages:
+              type: integer
+      403:
+        description: 權限不足
+    """
+    page = request.args.get('page', default=1, type=int)
+    per_page = request.args.get('per_page', default=10, type=int)
+    orders_page = OrderService.get_all_orders(page=page, per_page=per_page)
+
+    result = [order.to_dict(include_user=True) for order in orders_page.items]
+    return jsonify({
+        "orders": result,
+        "total": orders_page.total,
+        "page": orders_page.page,
+        "per_page": orders_page.per_page,
+        "pages": orders_page.pages
+    })
+
 #取消訂單
 @orders_bp.route('/<int:order_id>/cancel', methods=['POST'])
 @jwt_required()
@@ -146,7 +206,7 @@ def cancel_order(order_id):
 @jwt_required()
 def update_order_status(order_id):
     """
-    修改訂單狀態
+    修改訂單狀態（admin 或 該訂單用戶可操作）
     ---
     tags:
       - Orders
@@ -177,15 +237,35 @@ def update_order_status(order_id):
               type: string
       400:
         description: 狀態更新失敗
+      403:
+        description: 權限不足
     """
+
     data = request.json
     status = data.get("status")
-    order = OrderService.update_order_status(order_id, status)
+
+    # 取得目前登入者資訊
+    current_user_id = int(get_jwt_identity())
     
-    #寫入日誌
-    user_id = get_jwt_identity()
+    user = User.get_by_user_id(current_user_id)
+    current_user_role = user.role
+
+    # 查詢訂單
+    order = Order.query.filter_by(id=order_id).first()
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+
+    # 權限檢查
+    if current_user_role != "admin" and order.user_id != current_user_id:
+        return jsonify({"error": "Permission denied"}), 403
+
+
+    # 修改訂單狀態
+    order = OrderService.update_order_status(order_id, status)
+
+    # 日誌
     AuditService.log(
-        user_id=user_id,
+        user_id=current_user_id,
         action='update',
         target_type='order',
         target_id=order.id,
@@ -193,4 +273,3 @@ def update_order_status(order_id):
     )
 
     return jsonify({"message": f"Order status updated to {status}"})
-

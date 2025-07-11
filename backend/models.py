@@ -109,7 +109,10 @@ class User(db.Model):
     phone = db.Column(db.String(50))
     created_at = db.Column(db.DateTime)
     role = db.Column(db.String(20), default='user')
- 
+    line_user_id = db.Column(db.String(100), nullable=True)
+    line_user_id = db.Column(db.String(50))
+    line_display_name = db.Column(db.String(50))
+    line_picture_url = db.Column(db.String(255))
     @classmethod
     def get_by_username(cls, username):
         return cls.query.filter_by(username=username).first()
@@ -131,7 +134,10 @@ class User(db.Model):
             "address": self.address,
             "phone": self.phone,
             "created_at": str(self.created_at) if self.created_at else None,
-            "role": self.role
+            "role": self.role,
+            "line_user_id": self.line_user_id,
+            "line_display_name": self.line_display_name,
+            "line_picture_url": self.line_picture_url
         }
 ORDER_STATUS = [
         'pending',
@@ -150,8 +156,9 @@ class Order(db.Model):
     order_date = db.Column(db.DateTime)
     total = db.Column(db.Numeric)
     status = db.Column(Enum(*ORDER_STATUS, name="order_status_enum"), default='pending', nullable=False)
+    discount_code_id = db.Column(db.Integer, db.ForeignKey('discount_codes.id'), nullable=True)
+    discount_amount = db.Column(db.Numeric, nullable=True)  # 折扣金額，無折扣則為 NULL
     user = db.relationship('User', backref=db.backref('orders', lazy=True))
-    
 
     @classmethod
     def get_by_order_id(cls, order_id):
@@ -290,3 +297,75 @@ class ProductOnSale(db.Model):
             "end_date": self.end_date.isoformat() if self.end_date else None,
             "description": self.description,
         }
+
+class DiscountCode(db.Model):
+    __tablename__ = "discount_codes"
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True, nullable=False)        # 折扣碼
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)  # 指定商品（null=全站通用）
+    discount = db.Column(db.Float, nullable=True)    # 折扣比例 0.9 = 九折
+    amount = db.Column(db.Float, nullable=True)      # 折抵金額 (二選一)
+    min_spend = db.Column(db.Float, nullable=True)   # 滿額才可用（可為 0）
+    valid_from = db.Column(db.DateTime, nullable=False)
+    valid_to = db.Column(db.DateTime, nullable=False)
+    usage_limit = db.Column(db.Integer, nullable=True)    # 總可用次數
+    used_count = db.Column(db.Integer, default=0)
+    per_user_limit = db.Column(db.Integer, nullable=True) # 每個用戶最多可用幾次
+    description = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+
+    product = db.relationship('Product', backref=db.backref('discount_codes', lazy=True))
+
+    def is_valid(self, user_id=None, order_total=None, user_usage_count=0):
+        now = datetime.now()
+        if not self.is_active:
+            return False, "折扣碼已停用"
+        if self.valid_from > now:
+            return False, "折扣碼尚未開始"
+        if self.valid_to < now:
+            return False, "折扣碼已過期"
+        if self.usage_limit is not None and self.used_count >= self.usage_limit:
+            return False, "折扣碼已達最大使用次數"
+        if self.per_user_limit is not None and user_usage_count >= self.per_user_limit:
+            return False, "您已達單人最大使用次數"
+        if self.min_spend and order_total is not None and order_total < self.min_spend:
+            return False, f"需滿 {self.min_spend} 元才可使用"
+        return True, "OK"
+
+    def calc_discount(self, order_total):
+        """ 回傳折扣後金額（不修改資料）"""
+        if self.amount:  # 固定金額折抵
+            discount_price = max(order_total - self.amount, 0)
+        elif self.discount:
+            discount_price = round(order_total * self.discount, 2)
+        else:
+            discount_price = order_total
+        return discount_price
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "code": self.code,
+            "product_id": self.product_id,
+            "discount": self.discount,
+            "amount": self.amount,
+            "min_spend": self.min_spend,
+            "valid_from": self.valid_from.isoformat() if self.valid_from else None,
+            "valid_to": self.valid_to.isoformat() if self.valid_to else None,
+            "usage_limit": self.usage_limit,
+            "used_count": self.used_count,
+            "per_user_limit": self.per_user_limit,
+            "description": self.description,
+            "is_active": self.is_active
+        }
+    
+class UserDiscountCode(db.Model):
+    __tablename__ = "user_discount_codes"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    discount_code_id = db.Column(db.Integer, db.ForeignKey('discount_codes.id'), nullable=False)
+    used_count = db.Column(db.Integer, default=0)
+    last_used_at = db.Column(db.DateTime, default=datetime.now)
+
+    user = db.relationship('User', backref=db.backref('used_discount_codes', lazy=True))
+    discount_code = db.relationship('DiscountCode', backref=db.backref('user_usages', lazy=True))

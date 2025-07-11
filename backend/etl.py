@@ -3,7 +3,6 @@ import random
 from werkzeug.security import generate_password_hash
 from models import db, Category, Product, User, Cart, CartItem, Order, OrderItem
 from app import create_app
-from flask import Flask
 
 app = create_app()
 app.app_context().push()
@@ -27,47 +26,46 @@ def etl_categories():
     db.session.commit()
     return cat_name_id_map
 
-def etl_products(cat_name_id_map):
-    print("下載 products...")
-    resp = requests.get("https://fakestoreapi.com/products")
-    products = resp.json()
+def etl_local_products(json_path="products.json"):
+    with open(json_path, "r", encoding="utf8") as f:
+        products = json.load(f)
     for prod in products:
-        # 檢查 title + category_id（唯一組合）
-        unique = Product.query.filter_by(title=prod['title'], category_id=cat_name_id_map[prod['category']]).first()
-        if unique:
+        # 你可以改寫唯一檢查條件
+        if Product.query.filter_by(title=prod["title"], category_id=prod["category_id"]).first():
             continue
         p = Product(
-            title=prod['title'],
-            price=prod['price'],
-            description=prod['description'],
-            category_id=cat_name_id_map[prod['category']],
-            images=[prod['image']]
+            title=prod["title"],
+            price=prod["price"],
+            description=prod.get("description"),
+            category_id=prod["category_id"],
+            images=prod.get("images", [])
         )
         db.session.add(p)
     db.session.commit()
+    print("已載入本地 products 資料")
 
 def etl_users():
-    print("下載 users...")
-    resp = requests.get("https://fakestoreapi.com/users")
-    users = resp.json()
-    for u in users:
-        # 檢查 username、email
-        if User.query.filter_by(username=u['username']).first():
-            continue
-        if User.query.filter_by(email=u['email']).first():
-            continue
-        full_name = f"{u['name']['firstname']} {u['name']['lastname']}"
-        address = f"{u['address']['number']} {u['address']['street']}, {u['address']['city']}"
-        user = User(
-            username=u['username'],
-            email=u['email'],
-            password=generate_password_hash(u['password']),
-            full_name=full_name,
-            address=address,
-            phone=u['phone']
-        )
-        db.session.add(user)
-    db.session.commit()
+    print("新增admin users...")
+    # resp = requests.get("https://fakestoreapi.com/users")
+    # users = resp.json()
+    # for u in users:
+    #     # 檢查 username、email
+    #     if User.query.filter_by(username=u['username']).first():
+    #         continue
+    #     if User.query.filter_by(email=u['email']).first():
+    #         continue
+    #     full_name = f"{u['name']['firstname']} {u['name']['lastname']}"
+    #     address = f"{u['address']['number']} {u['address']['street']}, {u['address']['city']}"
+    #     user = User(
+    #         username=u['username'],
+    #         email=u['email'],
+    #         password=generate_password_hash(u['password']),
+    #         full_name=full_name,
+    #         address=address,
+    #         phone=u['phone']
+    #     )
+    #     db.session.add(user)
+    # db.session.commit()
     
     user = User(
             username='talen3031',
@@ -145,10 +143,10 @@ def etl_carts_orders():
 
 def main():
     cat_name_id_map = etl_categories()
-    etl_products(cat_name_id_map)
+    etl_local_products()
     etl_users()
-    etl_carts_orders()
-    print("✅ ORM 資料載入完成")
+    #etl_carts_orders()
+    print("✅ 資料載入完成")
 
 if __name__ == "__main__":
     main()

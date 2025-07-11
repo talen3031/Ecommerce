@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Card, Spin, message, Row, Col } from "antd";
 import api from "./api";
+import { useNavigate } from "react-router-dom";
 
-function RecommendList({ userId, mode = "cart", limit = 5 ,onSelectProduct}) {
+function RecommendList({ userId, mode = "cart", limit = 5, onSelectProduct }) {
   // mode: "cart"（購物車推薦），"collaborative"（協同過濾），"user"（購買紀錄）
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!userId) return;
@@ -26,6 +28,12 @@ function RecommendList({ userId, mode = "cart", limit = 5 ,onSelectProduct}) {
 
   if (!userId) return null;
 
+  // 處理點擊：優先使用 props.onSelectProduct，否則 navigate
+  const handleClick = (id) => {
+    if (onSelectProduct) onSelectProduct(id);
+    else navigate(`/products/${id}`);
+  };
+
   return (
     <div style={{ marginTop: 32 }}>
       <h3>你可能喜歡...</h3>
@@ -35,7 +43,7 @@ function RecommendList({ userId, mode = "cart", limit = 5 ,onSelectProduct}) {
             <Col key={product.id} span={8} style={{ marginBottom: 16 }}>
               <Card
                 hoverable
-                onClick={() => onSelectProduct && onSelectProduct(product.id)}
+                onClick={() => handleClick(product.id)}
                 cover={
                   <img
                     src={product.images[0]}

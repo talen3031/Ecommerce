@@ -1,14 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, InputNumber, message, Popconfirm, Spin } from "antd";
+import { Modal, Table, Button, InputNumber, message, Popconfirm, Spin, Input } from "antd";
 import RecommendList from "./RecommendList";
-
 import api from "./api";
+import { useNavigate } from "react-router-dom";
 
-function CartList(onSelectProduct) {
+function CartList() {
   const userId = localStorage.getItem("user_id");
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [itemUpdating, setItemUpdating] = useState({}); // 控制每一列 loading
+  const [itemUpdating, setItemUpdating] = useState({});
+  const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // 折扣碼功能
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountInfo, setDiscountInfo] = useState(null);
+  const [discountMsg, setDiscountMsg] = useState("");
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+
+  const navigate = useNavigate();
 
   // 取得購物車資料
   const fetchCart = async () => {
@@ -31,7 +41,7 @@ function CartList(onSelectProduct) {
     // eslint-disable-next-line
   }, []);
 
-  // 更新數量
+  // 更新商品數量
   const updateQuantity = async (product_id, quantity) => {
     setItemUpdating(u => ({ ...u, [product_id]: true }));
     try {
@@ -57,23 +67,53 @@ function CartList(onSelectProduct) {
     setItemUpdating(u => ({ ...u, [product_id]: false }));
   };
 
-  // 結帳
-  const handleCheckout = async () => {
-    if (!cart || !cart.items || cart.items.length === 0) {
-      message.warning("購物車沒有商品");
+  // 套用折扣碼
+  const applyDiscount = async () => {
+    if (!discountCode) {
+      setDiscountMsg("請輸入折扣碼");
       return;
     }
+    setDiscountMsg("");
+    setApplyingDiscount(true);
+    try {
+      const res = await api.post(`/carts/${userId}/apply_discount`, { code: discountCode });
+      if (res.data.success) {
+        setDiscountInfo(res.data);
+        setDiscountMsg("折扣碼套用成功！");
+      } else {
+        setDiscountInfo(null);
+        setDiscountMsg(res.data.message || "折扣碼無效");
+      }
+    } catch (err) {
+      setDiscountInfo(null);
+      setDiscountMsg("套用失敗：" + (err.response?.data?.error || err.message));
+    }
+    setApplyingDiscount(false);
+  };
+
+  // 結帳 Modal 中按「確定結帳」才會送出訂單
+  const handleRealCheckout = async () => {
+    setConfirmLoading(true);
     try {
       const items = cart.items.map(item => ({
         product_id: item.product_id,
         quantity: item.quantity
       }));
-      const res = await api.post(`/carts/${userId}/checkout`, { items });
+      const body = { items };
+      if (discountInfo && discountInfo.success && discountInfo.discount_code?.code) {
+        body.discount_code = discountInfo.discount_code.code;
+      }
+      const res = await api.post(`/carts/${userId}/checkout`, body);
       message.success(`結帳成功，訂單號：${res.data.order_id}`);
+      setDiscountInfo(null);
+      setDiscountCode("");
+      setDiscountMsg("");
+      setCheckoutModalVisible(false);
       fetchCart();
     } catch (err) {
       message.error("結帳失敗：" + (err.response?.data?.error || err.message));
     }
+    setConfirmLoading(false);
   };
 
   const columns = [
@@ -110,17 +150,20 @@ function CartList(onSelectProduct) {
     }
   ];
 
+  // 計算原始總金額
   const total = cart?.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
-  
+
+  // 推薦模式
   let mode;
   if (!cart?.items || cart.items.length === 0) {
-    mode = "user"; 
-    console.log("mode:",mode) // 購物車空的，個人化推薦
+    mode = "user"; // 購物車空的，個人化推薦
   } else {
-    mode = "collaborative";  
-    console.log("mode:",mode) ;// 購物車有商品，協同過濾推薦
+    mode = "collaborative"; // 有商品，協同過濾推薦
   }
-  
+
+  // 推薦商品點擊
+  const handleGoDetail = (id) => navigate(`/products/${id}`);
+
   return (
     <div style={{ maxWidth: 700, margin: "40px auto" }}>
       <h2>我的購物車</h2>
@@ -130,21 +173,85 @@ function CartList(onSelectProduct) {
           dataSource={cart?.items || []}
           rowKey="product_id"
           pagination={false}
-          footer={() => <div style={{ textAlign: "right" }}>總計：NT$ {total.toFixed(2)}</div>}
+          footer={() => (
+            <div style={{ textAlign: "right" }}>
+              總計：NT$ {total.toFixed(2)}
+            </div>
+          )}
         />
       </Spin>
-  
+      {/* 折扣碼功能區 */}
+      <div style={{ marginTop: 16, textAlign: "right" }}>
+        <Input
+          placeholder="輸入折扣碼"
+          value={discountCode}
+          style={{ width: 200, marginRight: 8 }}
+          onChange={e => setDiscountCode(e.target.value)}
+          disabled={applyingDiscount}
+        />
+        <Button type="primary" onClick={applyDiscount} loading={applyingDiscount}>
+          套用折扣碼
+        </Button>
+      </div>
+      {/* 顯示後端回傳 message */}
+      {discountMsg && (
+        <div style={{ marginTop: 8, color: "#faad14", textAlign: "right" }}>
+          {discountMsg}
+        </div>
+      )}
+      {/* 顯示折扣資訊 */}
+      {discountInfo && discountInfo.success && (
+        <div style={{ marginTop: 8, color: "#fa541c", textAlign: "right" }}>
+          折扣後總計：NT$ {discountInfo.discounted_total}，已折抵 NT$ {discountInfo.discount_amount}
+          <br />
+          <span style={{ color: "#888", fontSize: 12 }}>{discountInfo.discount_code?.description}</span>
+        </div>
+      )}
+      {/* 結帳按鈕 */}
       <div style={{ textAlign: "right", marginTop: 24 }}>
-        <Button type="primary" size="large" onClick={handleCheckout} disabled={!cart || !cart.items || cart.items.length === 0}>
+        <Button
+          type="primary"
+          size="large"
+          onClick={() => { setCheckoutModalVisible(true); }}
+          disabled={!cart || !cart.items || cart.items.length === 0}
+        >
           結帳
         </Button>
       </div>
-      <RecommendList
-        userId={localStorage.getItem("user_id")}
-        mode="user"
-        limit={6}
-        onSelectProduct={onSelectProduct}
-      />
+      {/* 結帳前確認 Modal */}
+      <Modal
+        open={checkoutModalVisible}
+        title="訂單確認"
+        onCancel={() => setCheckoutModalVisible(false)}
+        onOk={handleRealCheckout}
+        confirmLoading={confirmLoading}
+        okText="確定結帳"
+        cancelText="取消"
+      >
+        <div>
+          <b>訂單內容：</b>
+          <ul>
+            {(cart?.items || []).map(item => (
+              <li key={item.product_id}>
+                {item.title} × {item.quantity}（NT${item.price}）小計：NT${(item.price * item.quantity).toFixed(2)}
+              </li>
+            ))}
+          </ul>
+          <div style={{ marginTop: 12 }}>
+            原始總金額：NT$ {total.toFixed(2)}
+            {discountInfo && discountInfo.success && (
+              <div style={{ color: "#fa541c" }}>
+                折扣後總計：NT$ {discountInfo.discounted_total}，已折抵 NT$ {discountInfo.discount_amount}
+              </div>
+            )}
+          </div>
+          {discountInfo && discountInfo.discount_code?.description && (
+            <div style={{ color: "#888", fontSize: 12 }}>({discountInfo.discount_code.description})</div>
+          )}
+        </div>
+      </Modal>
+      {/* 推薦商品 */}
+      <RecommendList userId={userId} mode={mode} limit={3} onSelectProduct={handleGoDetail} />
     </div>
   );
 }

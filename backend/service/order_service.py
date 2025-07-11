@@ -1,6 +1,6 @@
-from models import db, Order,Product
+from models import db, Order,Product,User
 from exceptions import NotFoundError
-from utils.notify_util import notify_user_order_status
+from utils.notify_util import send_email_notify_user_order_status,send_line_notify_user_order_status
 class OrderService:
     @staticmethod
     def create(user_id, order_date, total=0, status='pending'):
@@ -18,6 +18,10 @@ class OrderService:
         db.session.commit()
         return order
     
+    @staticmethod
+    def get_all_orders(page=1, per_page=10):
+        """查詢全部訂單，依日期排序（分頁）"""
+        return Order.query.order_by(Order.order_date.desc()).paginate(page=page, per_page=per_page, error_out=False)
     @staticmethod
     def get_user_orders(user_id):
         return Order.query.filter_by(user_id=user_id).order_by(Order.order_date.desc()).all()
@@ -64,7 +68,11 @@ class OrderService:
             raise ValueError("Only pending orders can be cancelled")
         order.status = 'cancelled'
         db.session.commit()
-        notify_user_order_status(order)
+                #email 寄信通知
+        send_email_notify_user_order_status(order)
+        #line 新增推播通知
+        user = User.get_by_user_id(order.user_id)
+        send_line_notify_user_order_status(user, order)
         return order
 
     @staticmethod
@@ -83,5 +91,9 @@ class OrderService:
             raise ValueError(f"Order is already in status '{status}'")
         order.status = status
         db.session.commit()
-        notify_user_order_status(order)
+        #email 寄信通知
+        #send_email_notify_user_order_status(order)
+        #line 新增推播通知
+        user = User.get_by_user_id(order.user_id)
+        send_line_notify_user_order_status(user, order)
         return order

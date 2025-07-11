@@ -1,47 +1,46 @@
--- 建立 categories
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
+    name VARCHAR(100) UNIQUE NOT NULL,
     description TEXT
 );
 
--- 建立 products
 CREATE TABLE products (
-    id SERIAL PRIMARY KEY,  
+    id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     price NUMERIC NOT NULL,
     description TEXT,
     category_id INTEGER REFERENCES categories(id),
-    image VARCHAR(255),
+    images JSONB,
     is_active BOOLEAN DEFAULT TRUE,
     CONSTRAINT unique_product_title_category UNIQUE (title, category_id)
 );
 
--- 建立 users
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,  
-    username VARCHAR(100) NOT NULL UNIQUE,
-    email VARCHAR(255) NOT NULL UNIQUE,
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
     password TEXT NOT NULL,
     full_name VARCHAR(255),
     address TEXT,
     phone VARCHAR(50),
-    created_at TIMESTAMP DEFAULT NOW(),
-    role VARCHAR(20) DEFAULT 'user',
-    CONSTRAINT unique_user_account UNIQUE (username, email)
+    created_at TIMESTAMP,
+    role VARCHAR(20) DEFAULT 'user'
 );
 
--- 建立 orders（對應 carts）
+CREATE TYPE order_status_enum AS ENUM (
+    'pending', 'paid', 'processing', 'shipped',
+    'delivered', 'cancelled', 'returned', 'refunded'
+);
+
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
     order_date TIMESTAMP,
     total NUMERIC,
-    status VARCHAR(50) DEFAULT 'pending'
+    status order_status_enum NOT NULL DEFAULT 'pending',
+    discount_code_id INTEGER REFERENCES discount_codes(id)
 );
 
-
--- 建立 order_items（對應 cart_items）
 CREATE TABLE order_items (
     id SERIAL PRIMARY KEY,
     order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
@@ -51,19 +50,15 @@ CREATE TABLE order_items (
     CONSTRAINT unique_order_product UNIQUE (order_id, product_id)
 );
 
--- （進階）每個 user 只能有一個 active cart (optional)
--- CREATE UNIQUE INDEX unique_user_active_cart ON orders (user_id) WHERE status = 'active';
+CREATE TYPE cart_status_enum AS ENUM ('active', 'checked_out');
 
--- 購物車主表
 CREATE TABLE carts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
     created_at TIMESTAMP,
-    status VARCHAR(50) DEFAULT 'active'
+    status cart_status_enum NOT NULL DEFAULT 'active'
 );
 
-
--- 購物車細項
 CREATE TABLE cart_items (
     id SERIAL PRIMARY KEY,
     cart_id INTEGER REFERENCES carts(id) ON DELETE CASCADE,
@@ -71,14 +66,55 @@ CREATE TABLE cart_items (
     quantity INTEGER NOT NULL DEFAULT 1,
     CONSTRAINT unique_cart_product UNIQUE (cart_id, product_id)
 );
--- AuditLog
+
 CREATE TABLE audit_logs (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
-    action VARCHAR(50) NOT NULL,         -- 操作類型: 'add', 'delete', 'update'
-    target_type VARCHAR(50) NOT NULL,    -- 目標類型: 'product', 'user', ...
-    target_id INTEGER,                   -- 目標ID，例如 product_id
-    description TEXT,                    -- 操作說明
-    created_at TIMESTAMP DEFAULT NOW(),  -- 操作時間
-    CONSTRAINT fk_auditlog_user FOREIGN KEY(user_id) REFERENCES users(id)
+    action VARCHAR(50) NOT NULL,
+    target_type VARCHAR(50) NOT NULL,
+    target_id INTEGER,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE password_reset_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    token VARCHAR(128) UNIQUE NOT NULL,
+    expire_at TIMESTAMP NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE products_on_sale (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER REFERENCES products(id) NOT NULL,
+    discount FLOAT NOT NULL,
+    start_date TIMESTAMP NOT NULL DEFAULT now(),
+    end_date TIMESTAMP NOT NULL,
+    description TEXT
+);
+
+CREATE TABLE discount_codes (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    product_id INTEGER REFERENCES products(id),
+    discount FLOAT,
+    amount FLOAT,
+    min_spend FLOAT,
+    valid_from TIMESTAMP NOT NULL,
+    valid_to TIMESTAMP NOT NULL,
+    usage_limit INTEGER,
+    used_count INTEGER DEFAULT 0,
+    per_user_limit INTEGER,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE user_discount_codes (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) NOT NULL,
+    discount_code_id INTEGER REFERENCES discount_codes(id) NOT NULL,
+    used_count INTEGER DEFAULT 0,
+    last_used_at TIMESTAMP DEFAULT now()
 );

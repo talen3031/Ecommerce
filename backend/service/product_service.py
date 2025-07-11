@@ -20,7 +20,7 @@ class ProductService:
         if max_price is not None:
             query = query.filter(Product.price <= max_price)
 
-        query =query.order_by(Product.id)
+        query =query.order_by(Product.id.desc())
         
         return query.paginate(page=page, per_page=per_page, error_out=False)
     
@@ -102,8 +102,10 @@ class ProductService:
         db.session.add(sale)
         db.session.commit()
         
-        # 呼叫通知 function
-        notify_util.notify_users_cart_product_on_sale(product_id, discount, start_date, end_date, description)
+        # 呼叫通知 send mail function
+        notify_util.send_email_notify_users_cart_product_on_sale(product_id, discount, start_date, end_date, description)
+        # 呼叫通知 send line function
+        notify_util.send_line_notify_users_cart_product_on_sale(product_id, discount, start_date, end_date, description)
         
         return sale
 

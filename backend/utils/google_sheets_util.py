@@ -1,0 +1,82 @@
+import gspread
+from google.oauth2.service_account import Credentials
+import os
+# 設定參數（可移到 config 或 .env）
+GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "你的 Google Sheet ID")
+#本地端
+#GOOGLE_SHEET_CRED = os.getenv("GOOGLE_SHEET_CRED", "ecommerce-465511-3a8c7b2b3a44.json")
+GOOGLE_SHEET_CRED = os.getenv("GOOGLE_SHEET_CRED", "/etc/secrets/google_sheet_cred.json")
+
+SCOPE = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/drive"
+]
+
+def append_order_to_sheet(order, order_items=None):
+    from models import User, Product
+    print("GOOGLE_SHEET_ID",GOOGLE_SHEET_ID)
+    print("GOOGLE_SHEET_CRED",GOOGLE_SHEET_CRED)
+    creds = Credentials.from_service_account_file(GOOGLE_SHEET_CRED, scopes=SCOPE)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
+
+    # 取得 user info
+    user_id = getattr(order, "user_id", None) or order.get("user_id")
+    if hasattr(order, "user") and order.user:
+        username = order.user.username
+        user_fullname = order.user.full_name
+    else:
+        user = User.query.filter_by(id=user_id).first()
+        username = user.username if user else f"UID:{user_id}"
+        user_fullname = user.full_name if user else ""
+
+    # 取得折扣碼與折扣金額
+    discount_code = ""
+    discount_amount = 0
+    discount_info = ""
+    # 你的 Order model 有 discount_code_id，可查詢 DiscountCode
+    if hasattr(order, "discount_code_id") and order.discount_code_id:
+        from models import DiscountCode
+        dc = DiscountCode.query.get(order.discount_code_id)
+        if dc:
+            discount_code = dc.code
+            if dc.discount:
+                percentage_off=int(dc.discount*10)
+                discount_info = f"{percentage_off}折" #ex. 9折
+            elif dc.amount:
+                discount_info =  f"折 {int(dc.amount)}" #ex. 折100
+            discount_amount = float(getattr(order, "discount_amount", 0)) or 0
+
+     # 處理每個商品攤平成多欄
+    item_columns = []
+    items_to_process = order_items or getattr(order, "order_items", []) or order.get("items", [])
+    for idx, item in enumerate(items_to_process, 1):
+        # 商品名稱
+        if hasattr(item, "product") and item.product:
+            title = item.product.title
+            price = float(item.price) if hasattr(item, "price") else (item.product.price if hasattr(item.product, "price") else 0)
+        else:
+            product = Product.query.get(getattr(item, "product_id", None) or item.get("product_id"))
+            title = product.title if product else f"PID:{item.get('product_id', '')}"
+            price = float(item.get("price", 0)) if isinstance(item, dict) else 0
+        qty = getattr(item, "quantity", None) or item.get("quantity")
+        # 每一組「商品名稱, 數量, 價格」當作三個欄位
+        item_columns.extend([title, qty, price])
+
+
+    # 組 row
+    row = [
+        getattr(order, "id", None) or order.get("id"),       # order_id
+        user_id,                                            # user_id
+        username,                                           # username
+        user_fullname,                                      # user_fullname
+        str(getattr(order, "order_date", None) or order.get("order_date")),  # order_date
+        float(getattr(order, "total", 0) or order.get("total", 0)),          # total
+        getattr(order, "status", None) or order.get("status"),               # status
+        discount_code,                                      # used_discount_code
+        discount_info,                                    # discount_info 
+        discount_amount,                                    # discount_amount
+    ] + item_columns
+    sheet.append_row(row, value_input_option="USER_ENTERED")

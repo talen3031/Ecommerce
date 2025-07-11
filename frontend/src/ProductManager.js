@@ -3,6 +3,7 @@ import { Table, Button, Popconfirm, message, Modal, Form, Input, InputNumber, Se
 import { PlusOutlined } from '@ant-design/icons';
 import api from "./api";
 import dayjs from "dayjs";
+import { useNavigate } from "react-router-dom";
 
 const categoryOptions = [
   { label: "全部", value: "" },
@@ -27,6 +28,8 @@ function ProductManager() {
   const [saleModalOpen, setSaleModalOpen] = useState(false);
   const [saleForm] = Form.useForm();
   const [saleProductId, setSaleProductId] = useState(null);
+
+  const navigate = useNavigate();
 
   const fetchProducts = () => {
     setLoading(true);
@@ -133,7 +136,15 @@ function ProductManager() {
 
   const columns = [
     { title: "ID", dataIndex: "id", sorter: (a, b) => a.id - b.id, defaultSortOrder: "ascend" },
-    { title: "名稱", dataIndex: "title" },
+    {
+      title: "名稱",
+      dataIndex: "title",
+      render: (value, record) => (
+        <Button type="link" onClick={() => navigate(`/products/${record.id}`)}>
+          {value}
+        </Button>
+      )
+    },
     {
       title: "原價",
       dataIndex: "price",
@@ -163,11 +174,10 @@ function ProductManager() {
       title: "狀態",
       dataIndex: "is_active",
       render: (value, record) => {
-      console.log("商品ID:", record.id, "is_active:", value);
-      return isActive(value)
-        ? <span style={{ color: "#52c41a" }}>上架</span>
-        : <span style={{ color: "#f5222d" }}>下架</span>;
-       }
+        return isActive(value)
+          ? <span style={{ color: "#52c41a" }}>上架</span>
+          : <span style={{ color: "#f5222d" }}>下架</span>;
+      }
     },
     {
       title: "操作",

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Spin, Input, Button, InputNumber, Select, Pagination, message, Tag } from "antd";
+import { Card, Row, Col, Spin, Input, Button, InputNumber, Select, Pagination, Drawer } from "antd";
 import RecommendList from "./RecommendList";
 import api from "./api";
+import { useNavigate } from "react-router-dom";
 
 const categoryOptions = [
   { label: "全部", value: "" },
@@ -12,7 +13,7 @@ const categoryOptions = [
 ];
 const categoryMap = Object.fromEntries(categoryOptions.map(opt => [opt.value, opt.label]));
 
-function ProductList({ onSelectProduct }) {
+function ProductList() {
   const [products, setProducts] = useState([]);
   const [pageInfo, setPageInfo] = useState({ page: 1, pages: 1, total: 0, per_page: 12 });
   const [loading, setLoading] = useState(false);
@@ -21,6 +22,9 @@ function ProductList({ onSelectProduct }) {
   const [minPrice, setMinPrice] = useState();
   const [maxPrice, setMaxPrice] = useState();
   const [category, setCategory] = useState("");
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate = useNavigate();
 
   const fetchProducts = (page = 1, pageSize = 12) => {
     setLoading(true);
@@ -66,122 +70,192 @@ function ProductList({ onSelectProduct }) {
     fetchProducts(1, pageInfo.per_page);
   };
 
+  const handleGoDetail = (id) => navigate(`/products/${id}`);
+
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto" }}>
-      <h2>商品瀏覽</h2>
-      {/* 搜尋/篩選 */}
-      <Row gutter={8} style={{ marginBottom: 16 }}>
-        <Col>
-          <Input
-            placeholder="關鍵字"
-            value={searchValue}
-            onChange={e => setSearchValue(e.target.value)}
-            style={{ width: 150 }}
-            onPressEnter={handleSearch}
-          />
-        </Col>
-        <Col>
-          <InputNumber
-            placeholder="最低價"
-            min={0}
-            value={minPrice}
-            onChange={setMinPrice}
-            style={{ width: 100 }}
-          />
-        </Col>
-        <Col>
-          <InputNumber
-            placeholder="最高價"
-            min={0}
-            value={maxPrice}
-            onChange={setMaxPrice}
-            style={{ width: 100 }}
-          />
-        </Col>
-        <Col>
-         <Select
-            placeholder="分類"
-            value={category}
-            options={categoryOptions}
-            onChange={val => setCategory(val)}
-            style={{ width: 100 }}
-            allowClear
-          />
-        </Col>
-        <Col>
-          <Button type="primary" onClick={handleSearch}>搜尋</Button>
-        </Col>
-        <Col>
-          <Button onClick={handleClear}>清除</Button>
-        </Col>
-      </Row>
+    <>
+      {/*  Banner 無按鈕 */}
+      <div
+        style={{
+          width: "100vw",
+          height: 80,
+          background: "#eee",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}
+      >
+      <span
+        style={{
+          color: "#000",
+          fontWeight: 900,
+          fontSize: 32,
+          letterSpacing: 2,
+          fontFamily: "Oswald, 'Noto Sans TC', Arial, sans-serif",
+          userSelect: "none",
+          borderRight: "4px solid #000",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          display: "inline-block",
+          animation: "typing 2.2s steps(8, end), blink-caret 0.7s step-end infinite",
+          width: "8.5ch"
+        }}
+      >
+        FLEXBOY
+        <style>
+          {`
+            @keyframes typing {
+              from { width: 0 }
+              to { width: 8ch }
+            }
+            @keyframes blink-caret {
+              50% { border-color: transparent }
+            }
+          `}
+        </style>
+      </span>
+      </div>
 
-      {/* 商品卡片2欄排列 */}
-      <Spin spinning={loading}>
-        <Row gutter={[24, 24]}>
-          {products.map(product => (
-            <Col xs={24} sm={12} md={12} lg={12} key={product.id}>
-              <Card
-                hoverable
-                onClick={() => onSelectProduct(product.id)}
-                cover={
-                  <img
-                    src={product.images?.[0]}
-                    alt={product.title}
-                    style={{ height: 240, objectFit: "cover", borderRadius: 8 }}
-                  />
-                }
-                style={{
-                  borderRadius: 12,
-                  boxShadow: "0 2px 16px #eee",
-                  cursor: "pointer",
-                  minHeight: 370
-                }}
-                bodyStyle={{ padding: 16 }}
-              >
-                <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 4 }}>{product.title}</div>
-                <div>
-                  {product.on_sale ? (
-                    <>
-                      <span style={{ color: "#fa541c", fontWeight: "bold", fontSize: 18 }}>NT${product.sale_price}</span>
-                      <span style={{ textDecoration: "line-through", color: "#888", marginLeft: 8 }}>NT${product.price}</span>
-                      <Tag color="red" style={{ marginLeft: 8, verticalAlign: "middle" }}>特價</Tag>
-                    </>
-                  ) : (
-                    <span style={{ fontWeight: "bold", fontSize: 18 }}>NT${product.price}</span>
-                  )}
-                </div>
-                <div style={{ color: "#999", fontSize: 14, margin: "6px 0" }}>
-                  {categoryMap[product.category_id] || "未知"}
-                </div>
-              </Card>
-            </Col>
-          ))}
-          {products.length === 0 && !loading && (
-            <div style={{ color: "#aaa", margin: "40px auto" }}>找不到商品</div>
-          )}
+
+      {/* 假設你有 Drawer (側邊選單) 就維持原本寫法（不會被 Banner 蓋住） */}
+
+      {/* 主內容 */}
+      <div style={{ marginTop: 90, maxWidth: 980, marginLeft: "auto", marginRight: "auto", fontFamily: "'Inter', 'Roboto', 'sans-serif'" }}>
+        {/* 搜尋/篩選 */}
+        <Row gutter={8} style={{ marginBottom: 18 }}>
+          <Col>
+            <Input
+              placeholder="關鍵字"
+              value={searchValue}
+              onChange={e => setSearchValue(e.target.value)}
+              style={{ width: 150 }}
+              onPressEnter={handleSearch}
+              allowClear
+            />
+          </Col>
+          <Col>
+            <InputNumber
+              placeholder="最低價"
+              min={0}
+              value={minPrice}
+              onChange={setMinPrice}
+              style={{ width: 100 }}
+            />
+          </Col>
+          <Col>
+            <InputNumber
+              placeholder="最高價"
+              min={0}
+              value={maxPrice}
+              onChange={setMaxPrice}
+              style={{ width: 100 }}
+            />
+          </Col>
+          <Col>
+            <Select
+              placeholder="分類"
+              value={category}
+              options={categoryOptions}
+              onChange={val => setCategory(val)}
+              style={{ width: 100 }}
+              allowClear
+            />
+          </Col>
+          <Col>
+            <Button type="default" onClick={handleSearch} style={{ borderColor: "#222", color: "#222" }}>搜尋</Button>
+          </Col>
+          <Col>
+            <Button onClick={handleClear} style={{ background: "#f4f4f4", color: "#888", border: "none" }}>清除</Button>
+          </Col>
         </Row>
-      </Spin>
 
-      <div style={{ textAlign: "center", margin: "32px 0" }}>
-        <Pagination
-          current={pageInfo.page}
-          pageSize={pageInfo.per_page}
-          total={pageInfo.total}
-          showSizeChanger={false}
-          onChange={handlePageChange}
+        {/* 商品卡片2欄排列 */}
+        <Spin spinning={loading}>
+          <Row gutter={[32, 32]}>
+            {products.map(product => (
+              <Col xs={24} sm={12} md={12} lg={12} key={product.id}>
+                <Card
+                  hoverable
+                  onClick={() => handleGoDetail(product.id)}
+                  cover={
+                    <img
+                      src={product.images?.[0]}
+                      alt={product.title}
+                      style={{
+                        height: 240, objectFit: "cover", borderRadius: 12,
+                        border: "1px solid #ebebeb", background: "#fff"
+                      }}
+                    />
+                  }
+                  style={{
+                    borderRadius: 12,
+                    border: "1px solid #ddd",
+                    cursor: "pointer",
+                    minHeight: 350,
+                    background: "#fafbfc",
+                    transition: "all 0.18s cubic-bezier(.22,1,.36,1)",
+                  }}
+                  bodyStyle={{ padding: 18 }}
+                  className="minimal-card"
+                >
+                  <div style={{
+                    fontWeight: 600, fontSize: 19, marginBottom: 6, color: "#1a1a1a"
+                  }}>
+                    {product.title}
+                  </div>
+                  <div style={{ marginBottom: 4 }}>
+                    {product.on_sale ? (
+                      <>
+                        <span style={{ color: "#1a1a1a", fontWeight: "bold", fontSize: 19 }}>NT${product.sale_price}</span>
+                        <span style={{ textDecoration: "line-through", color: "#b2b2b2", marginLeft: 10, fontSize: 15 }}>NT${product.price}</span>
+                      </>
+                    ) : (
+                      <span style={{ fontWeight: 500, fontSize: 18, color: "#1a1a1a" }}>NT${product.price}</span>
+                    )}
+                  </div>
+                  <div style={{ color: "#6e6e6e", fontSize: 15 }}>
+                    {categoryMap[product.category_id] || "－"}
+                  </div>
+                </Card>
+              </Col>
+            ))}
+            {products.length === 0 && !loading && (
+              <div style={{ color: "#aaa", margin: "40px auto" }}>找不到商品</div>
+            )}
+          </Row>
+        </Spin>
+
+        <div style={{ textAlign: "center", margin: "32px 0" }}>
+          <Pagination
+            current={pageInfo.page}
+            pageSize={pageInfo.per_page}
+            total={pageInfo.total}
+            showSizeChanger={false}
+            onChange={handlePageChange}
+          />
+        </div>
+        <div style={{ textAlign: "right", color: "#aaa", fontSize: 14 }}>
+          共 {pageInfo.total} 筆資料
+        </div>
+        <RecommendList
+          userId={localStorage.getItem("user_id")}
+          mode="user"
+          limit={6}
+          onSelectProduct={handleGoDetail}
         />
+
+        {/* 卡片 hover 動畫 */}
+        <style>
+          {`
+          .minimal-card:hover {
+            transform: translateY(-4px) scale(1.018);
+            border: 1.5px solid #333;
+            background: #f2f2f2;
+          }
+          `}
+        </style>
       </div>
-      <div style={{ textAlign: "right", color: "#888" }}>
-        共 {pageInfo.total} 筆資料
-      </div>
-      <RecommendList
-        userId={localStorage.getItem("user_id")}
-        mode="user"
-        limit={6}
-        onSelectProduct={onSelectProduct}
-      />
-    </div>
+    </>
   );
 }
 

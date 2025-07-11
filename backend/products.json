@@ -1,0 +1,113 @@
+[
+  {
+    "id": 30,
+    "title": "day by day T-shirt(white)",
+    "price": 980.0,
+    "description": "Keep moving ... til you...  ",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751878479/nsy6q2guqrbifrhybe0j.png"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
+    "is_active": true
+  },
+  {
+    "id": 33,
+    "title": "Do the Angle-bugs bunny T-shirt (white)",
+    "price": 1080.0,
+    "description": "Dont be a nerd! Do your motherfucjer angle!",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751884854/b5z4ws1btywhcbdvtkk2.png"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
+    "is_active": true
+  },
+  {
+    "id": 32,
+    "title": "music T-shirt",
+    "price": 980.0,
+    "description": "This is music all about~",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751885187/txwyrtbjtizsds2yxvix.png"
+    ],
+    "on_sale": true,
+    "sale_price": 882.0,
+    "sale_discount": 0.9,
+    "sale_start": "2025-07-11T00:00:00",
+    "sale_end": "2025-07-31T00:00:00",
+    "sale_description": null,
+    "sale_id": 5,
+    "is_active": true
+  },
+  {
+    "id": 25,
+    "title": "Love is REAL T-Shirt (Black)",
+    "price": 980.0,
+    "description": "Dont underrate Love ,which is REAL!",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751884732/wyvvhr23ctyr85cancyt.png"
+    ],
+    "on_sale": true,
+    "sale_price": 882.0,
+    "sale_discount": 0.9,
+    "sale_start": "2025-07-11T00:00:00",
+    "sale_end": "2025-07-31T00:00:00",
+    "sale_description": null,
+    "sale_id": 4,
+    "is_active": true
+  },
+  {
+    "id": 34,
+    "title": "Love is REAL T-Shirt (white)",
+    "price": 980.0,
+    "description": "Dont underrate Love ,which is REAL!",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751885575/htfidx4y34slxwthffg8.png"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
+    "is_active": true
+  },
+  {
+    "id": 31,
+    "title": "made of funk from 臺南 T-shirt ",
+    "price": 980.0,
+    "description": "This is made of funk from 臺南! more infomation: https://www.instagram.com/madeoffunk",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751879054/xi01srbatb0lsh1g32ts.png",
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751879057/tegg96y44uc8jwavswpc.png",
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751879080/usdsgpjvzja7xhnt29yu.png",
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751886152/t9b5isoocwltj4silmgq.png"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
+    "is_active": true
+  }
+]
