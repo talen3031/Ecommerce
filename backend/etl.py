@@ -6,7 +6,10 @@ from app import create_app
 
 app = create_app()
 app.app_context().push()
-
+if Category.query.first():
+    print("🟢 已有資料，跳過 ETL 載入")
+    exit(0)
+    
 # 1. 載入 categories
 def etl_categories():
     print("載入 categories.json ...")
