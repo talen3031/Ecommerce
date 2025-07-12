@@ -58,8 +58,14 @@ function EditProfile() {
         <Form.Item label="地址" name="address">
           <Input />
         </Form.Item>
-        <Form.Item label="電話" name="phone">
-          <Input />
+        <Form.Item 
+            name="phone" 
+            label="手機號碼"
+            rules={[
+              { pattern: /^09\d{8}$/, message: "請輸入正確的手機號碼格式（09開頭共10碼）" }
+            ]}
+          >
+            <Input />
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit" loading={loading} style={{ marginRight: 8 }}>儲存</Button>

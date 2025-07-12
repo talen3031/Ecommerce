@@ -11,13 +11,11 @@ function LoginForm() {
     setLoading(true);
     try {
       const res = await api.post("/auth/login", values);
-
       localStorage.setItem("token", res.data.access_token);
       localStorage.setItem("user_id", res.data.user_id);
       localStorage.setItem("role", res.data.role);
       window.location.href = "/";
       message.success("登入成功！");
-      // 導向首頁
       navigate("/");
     } catch (err) {
       message.error("登入失敗：" + (err.response?.data?.error || err.message));
@@ -29,10 +27,21 @@ function LoginForm() {
     <div style={{ maxWidth: 350, margin: "40px auto" }}>
       <h2>會員登入</h2>
       <Form onFinish={onFinish} layout="vertical">
-        <Form.Item name="username" label="使用者名稱" rules={[{ required: true }]}>
+        <Form.Item
+          name="email"
+          label="Email"
+          rules={[
+            { required: true, message: "請輸入 Email" },
+            { type: "email", message: "Email 格式錯誤" },
+          ]}
+        >
           <Input />
         </Form.Item>
-        <Form.Item name="password" label="密碼" rules={[{ required: true }]}>
+        <Form.Item
+          name="password"
+          label="密碼"
+          rules={[{ required: true, message: "請輸入密碼" }]}
+        >
           <Input.Password />
         </Form.Item>
         <Form.Item>

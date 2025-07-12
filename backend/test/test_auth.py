@@ -1,17 +1,16 @@
 import pytest
 import sys
 import os
-#最優先去指定的資料(專案根目錄下) 來imprt程式檔案app.py。
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from app import create_app
-from models import db,User,PasswordResetToken
 from datetime import datetime, timedelta
 
+# 最優先去指定的資料(專案根目錄下) 來 import 程式檔案 app.py。
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from app import create_app
+from models import db, User, PasswordResetToken
 
 def test_register_and_login(client):
-    # 測試註冊
+    # 註冊只用 email
     res = client.post('/auth/register', json={
-        'username': 'testuser',
         'email': 'testuser@example.com',
         'password': '123456'
     })
@@ -21,7 +20,7 @@ def test_register_and_login(client):
 
     # 測試登入
     res = client.post('/auth/login', json={
-        'username': 'testuser',
+        'email': 'testuser@example.com',
         'password': '123456'
     })
     assert res.status_code == 200
@@ -30,7 +29,7 @@ def test_register_and_login(client):
 
 def test_forgot_password_send_link(client):
     # 先創一個用戶
-    user = User(username='resetuser', email='reset@example.com', password='hashedpw')
+    user = User(email='reset@example.com', password='hashedpw')
     db.session.add(user)
     db.session.commit()
 
@@ -40,9 +39,8 @@ def test_forgot_password_send_link(client):
     # 不論存在與否都應同樣訊息
     assert 'reset link' in res.get_json()['message']
     
-    # 在PasswordResetToken資料庫有新 token
+    # 在 PasswordResetToken 資料庫有新 token
     token = PasswordResetToken.get_user_newest_token(user_id=user.id)
-
     assert token is not None
     assert token.used is False
 
@@ -52,26 +50,23 @@ def test_forgot_password_nonexist_email(client):
     # 應該不會暴露資訊
     assert 'reset link' in res.get_json()['message']
 
-
 def test_reset_password_success(client):
-    
     # 建立用戶+token
-    user = User(username='resetuser2', email='reset2@example.com', password='hashedpw2')
+    user = User(email='reset2@example.com', password='hashedpw2')
     db.session.add(user)
     db.session.commit()
     
-    # 建立有效token
+    # 建立有效 token
     token = PasswordResetToken(
         user_id=user.id,
         token='X7sWa1oIczo3UMRGODmTULD19KZZojZYCQuVJLRfBrQ',
         expire_at=datetime.now() + timedelta(hours=1),
         used=False
     )
-
     db.session.add(token)
     db.session.commit()
 
-    # 呼叫API重設
+    # 呼叫 API 重設
     res = client.post('/auth/reset_password', json={
         'token': 'X7sWa1oIczo3UMRGODmTULD19KZZojZYCQuVJLRfBrQ',
         'new_password': 'newpw123'
@@ -83,9 +78,9 @@ def test_reset_password_success(client):
     db.session.refresh(token)
     assert token.used is True
     
-    # 測試用reset password 登入
+    # 測試用 reset password 登入
     res = client.post('/auth/login', json={
-        'username': 'resetuser2',
+        'email': 'reset2@example.com',
         'password': 'newpw123'
     })
     assert res.status_code == 200
@@ -93,7 +88,7 @@ def test_reset_password_success(client):
     assert 'access_token' in data
 
 def test_reset_password_invalid_token(client):
-    # 測不存在或過期token
+    # 測不存在或過期 token
     res = client.post('/auth/reset_password', json={
         'token': 'badtoken',
         'new_password': 'anypw'

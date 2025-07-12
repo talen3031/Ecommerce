@@ -117,7 +117,7 @@ def send_line_notify_order_created(user, order, order_items):
         )
 
     msg_lines = [
-        f"Hi {user.username}，您的訂單已成立！",
+        f"Hi {user.email}，您的訂單已成立！",
         f"訂單編號：{order.id}",
         "商品明細：",
         items_text,
@@ -152,7 +152,7 @@ def send_line_notify_user_order_status(user, order):
     status_txt = status_map.get(order.status, order.status)
 
     msg = (
-        f"Hi {user.username}，您的訂單狀態有更新！\n"
+        f"Hi {user.email}，您的訂單狀態有更新！\n"
         f"目前狀態：{status_txt}\n"
         "如有疑問請聯繫客服 0923956156 ，感謝您的支持。"
     )
@@ -176,7 +176,7 @@ def send_line_cart_promo_notify(user, promo_products , discount, start_date, end
     start_date_str = start_date.strftime("%Y/%m/%d")
     end_date_str = end_date.strftime("%Y/%m/%d")
     msg = (
-        f"Hi {user.username}，好消息！\n"
+        f"Hi {user.email}，好消息！\n"
         "您購物車裡有商品正在特價：\n"
         f"{promo_text}\n"
         f"優惠期間：{start_date_str} ~ {end_date_str}\n"

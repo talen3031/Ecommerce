@@ -1,10 +1,10 @@
 import pytest
 import sys
 import os
-#最優先去指定的資料(專案根目錄下) 來imprt程式檔案app.py。
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app import create_app
-from models import db,User,Category,Order,OrderItem
+from models import db, User, Category, Order, OrderItem
 
 @pytest.fixture(autouse=True)
 def setup_category(client):
@@ -17,44 +17,42 @@ def setup_category(client):
 def admin_token(client):
     # 註冊管理員帳號
     res = client.post('/auth/register', json={
-        'username': 'admin',
         'email': 'admin@example.com',
         'password': 'admin123'
     })
     # 手動升級為 admin
-    user = User.query.filter_by(username='admin').first()
+    user = User.query.filter_by(email='admin@example.com').first()
     user.role = 'admin'
     db.session.commit()
     # 登入拿 token
     res = client.post('/auth/login', json={
-        'username': 'admin',
+        'email': 'admin@example.com',
         'password': 'admin123'
     })
     return res.get_json()['access_token']
 
 @pytest.fixture
 def new_user(client):
-    def _create_user(username, email, password="pw"):
+    def _create_user(email, password="pw"):
         res = client.post('/auth/register', json={
-            'username': username,
             'email': email,
             'password': password
         })
         user_id = res.get_json()['user_id']
-        res = client.post('/auth/login', json={'username': username, 'password': password})
+        res = client.post('/auth/login', json={'email': email, 'password': password})
         token = res.get_json()['access_token']
-        return {"user_id": user_id, "token": token, "username": username, "email": email}
+        return {"user_id": user_id, "token": token, "email": email}
     return _create_user
 
 def test_get_user(client, new_user):
-    user = new_user("pytest", "pytest@example.com", "123456")
+    user = new_user("pytest@example.com", "123456")
     res = client.get(f'/users/{user["user_id"]}', headers={'Authorization': f'Bearer {user["token"]}'})
     assert res.status_code == 200
     data = res.get_json()
-    assert data['username'] == 'pytest'
+    assert data['email'] == 'pytest@example.com'
 
 def test_update_user_info(client, new_user):
-    user = new_user("patchtest", "patchtest@example.com")
+    user = new_user("patchtest@example.com")
     res = client.patch(f'/users/{user["user_id"]}',
                        json={
                            'full_name': 'Patch User',
@@ -68,19 +66,16 @@ def test_update_user_info(client, new_user):
     assert data['address'] == 'Taipei'
     assert data['phone'] == '0912345678'
 
-
-def test_get_all_users_admin(client,admin_token):
-
+def test_get_all_users_admin(client, admin_token):
     # 查全部用戶
     res = client.get('/users/all', headers={'Authorization': f'Bearer {admin_token}'})
     assert res.status_code == 200
     data = res.get_json()
     assert isinstance(data.get("users", []), list)
-    assert any(u['username'] == 'admin' for u in data.get("users", []))
+    assert any(u['email'] == 'admin@example.com' for u in data.get("users", []))
 
-
-def test_recommend_for_user(client, new_user,admin_token):
-    user = new_user("recomuser", "recomuser@example.com")
+def test_recommend_for_user(client, new_user, admin_token):
+    user = new_user("recomuser@example.com")
     # 管理員新增三個商品
     id_list = []
     for title in ['A', 'B', 'C']:

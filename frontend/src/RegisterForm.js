@@ -10,7 +10,7 @@ function RegisterForm() {
   // 密碼強度自訂驗證：必須有英文字母與數字
   const validatePassword = (_, value) => {
     if (!value) return Promise.reject("請輸入密碼");
-    if (value.length < 10) return Promise.reject("密碼需大於 10 個字元");
+    if (value.length < 8) return Promise.reject("密碼需大於 8 個字元");
     if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) {
       return Promise.reject("密碼需同時包含英文字母與數字");
     }
@@ -34,16 +34,6 @@ function RegisterForm() {
         }}
         layout="vertical"
       >
-        <Form.Item
-          name="username"
-          label="使用者名稱"
-          rules={[
-            { required: true, message: "請輸入使用者名稱" },
-            { min: 6, message: "使用者名稱必須至少 6 個字元" },
-          ]}
-        >
-          <Input />
-        </Form.Item>
         <Form.Item
           name="email"
           label="Email"
@@ -91,18 +81,17 @@ function RegisterForm() {
         </Form.Item>
         <Form.Item
           name="full_name"
-          label="全名"
+          label="全名 (選填)"
         >
           <Input />
         </Form.Item>
-        <Form.Item name="address" label="地址">
+        <Form.Item name="address" label="地址 (選填)">
           <Input />
         </Form.Item>
         <Form.Item 
           name="phone" 
-          label="手機號碼"
+          label="手機號碼 (選填)"
           rules={[
-            { required: true, message: "請輸入手機號碼" },
             { pattern: /^09\d{8}$/, message: "請輸入正確的手機號碼格式（09開頭共10碼）" }
           ]}
         >

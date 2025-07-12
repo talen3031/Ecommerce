@@ -18,6 +18,24 @@
     "is_active": true
   },
   {
+    "id": 40,
+    "title": "Day by Day T-shirt (Brown)",
+    "price": 980.0,
+    "description": "Keep moving ... til you...  ",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752342330/zrhnvaokhrj3qm4vwsqo.png"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
+    "is_active": true
+  },
+  {
     "id": 33,
     "title": "Do the Angle-bugs bunny T-shirt (white)",
     "price": 1080.0,
@@ -44,13 +62,31 @@
     "images": [
       "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751885187/txwyrtbjtizsds2yxvix.png"
     ],
-    "on_sale": true,
-    "sale_price": 882.0,
-    "sale_discount": 0.9,
-    "sale_start": "2025-07-11T00:00:00",
-    "sale_end": "2025-07-31T00:00:00",
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
     "sale_description": null,
-    "sale_id": 5,
+    "sale_id": null,
+    "is_active": true
+  },
+  {
+    "id": 35,
+    "title": "Taiwna Banging Association T-shirt",
+    "price": 980.0,
+    "description": "Bang! We in your Face!",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752343799/msbamfnoqtjo7vlkxw39.png"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
     "is_active": true
   },
   {
@@ -100,6 +136,82 @@
       "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751879057/tegg96y44uc8jwavswpc.png",
       "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751879080/usdsgpjvzja7xhnt29yu.png",
       "https://res.cloudinary.com/dmy0dsavq/image/upload/v1751886152/t9b5isoocwltj4silmgq.png"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
+    "is_active": true
+  },
+  {
+    "id": 36,
+    "title": "府城 背心",
+    "price": 2080.0,
+    "description": "",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752341963/kwkgz3fsgurszetbppx9.jpg",
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752341966/t47ppchhohi7j8jhovba.jpg",
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752341975/shtvjk4msy8klsixai7x.jpg"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
+    "is_active": true
+  },
+  {
+    "id": 37,
+    "title": "Hip hop T-shirt",
+    "price": 980.0,
+    "description": "",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752341986/iczhmk9fwd9qeylsabio.jpg"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
+    "is_active": true
+  },
+  {
+    "id": 38,
+    "title": "Made of Funk 球衣",
+    "price": 980.0,
+    "description": "",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752342024/khldovi853bjvvfy3who.jpg",
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752342028/wy7www2jjfxgph2vr9gc.jpg"
+    ],
+    "on_sale": false,
+    "sale_price": null,
+    "sale_discount": null,
+    "sale_start": null,
+    "sale_end": null,
+    "sale_description": null,
+    "sale_id": null,
+    "is_active": true
+  },
+  {
+    "id": 39,
+    "title": "Don't sweat the technique T-shirt",
+    "price": 980.0,
+    "description": "Don't sweat the technique T-shirt, Drip on it, AND BE THE ONE YO",
+    "category_id": 3,
+    "images": [
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752342064/jrzzyle9kdg1hlglohza.png",
+      "https://res.cloudinary.com/dmy0dsavq/image/upload/v1752342274/dodtgboy2zyaiuq1udyn.png"
     ],
     "on_sale": false,
     "sale_price": null,

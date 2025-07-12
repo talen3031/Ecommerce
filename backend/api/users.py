@@ -1,9 +1,10 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import jwt_required, get_jwt_identity,get_jwt
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from api.decorate import admin_required
-from models import db, User 
-from service.user_service import UserService 
+from models import db, User
+from service.user_service import UserService
 from service.product_service import ProductService
+
 users_bp = Blueprint('users', __name__, url_prefix='/users')
 
 @users_bp.route('/<int:user_id>', methods=['GET'])
@@ -31,15 +32,21 @@ def get_user(user_id):
             id:
               type: integer
               example: 1
-            username:
-              type: string
-              example: "john_doe"
             email:
               type: string
               example: "john@example.com"
             role:
               type: string
               example: "user"
+            full_name:
+              type: string
+              example: "張三"
+            address:
+              type: string
+              example: "台北市中山區"
+            phone:
+              type: string
+              example: "0912345678"
             created_at:
               type: string
               format: date-time
@@ -60,23 +67,19 @@ def get_user(user_id):
               example: "User not found"
     """
     # 只允許本人查自己
-    
     current_user = get_jwt_identity()
     claims = get_jwt()
-    role = claims.get("role")  # 假設 JWT 內容有 role
+    role = claims.get("role")  # JWT 內容有 role
 
-    # 如果不是 admin，且查的不是自己，就拒絕
     if role != "admin" and int(current_user) != user_id:
         return jsonify({"error": "you only can search your own information"}), 403
 
-
     user = User.get_by_user_id(user_id=user_id)
-
     if user:
         return jsonify(user.to_dict())
     else:
         return jsonify({"error": "User not found"}), 404
-    
+
 @users_bp.route('/all', methods=['GET'])
 @admin_required
 def get_all_user():
@@ -114,9 +117,6 @@ def get_all_user():
                   id:
                     type: integer
                     example: 1
-                  username:
-                    type: string
-                    example: "john_doe"
                   email:
                     type: string
                     example: "john@example.com"
@@ -274,7 +274,6 @@ def recommend_for_user(user_id):
               type: string
               example: "Permission denied"
     """
-
     # 僅允許本人查詢
     current_user = get_jwt_identity()
     if int(current_user) != user_id:

@@ -53,9 +53,8 @@ def etl_local_products(json_path="products.json"):
 # 3. 新增一個 admin 用戶（必要時可自行擴充）
 def etl_users():
     print("新增 admin 用戶...")
-    if not User.query.filter_by(username='talen3031').first():
+    if not User.query.filter_by(email="talen3031@gmail.com").first():
         user = User(
-            username='talen3031',
             email="talen3031@gmail.com",
             password=generate_password_hash("talen168168"),
             full_name='蔡b',

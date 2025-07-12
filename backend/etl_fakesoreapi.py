@@ -53,15 +53,12 @@ def etl_users():
     resp = requests.get("https://fakestoreapi.com/users")
     users = resp.json()
     for u in users:
-        # 檢查 username、email 唯一
-        if User.query.filter_by(username=u['username']).first():
-            continue
+        # 檢查 email 唯一
         if User.query.filter_by(email=u['email']).first():
             continue
         full_name = f"{u['name']['firstname']} {u['name']['lastname']}"
         address = f"{u['address']['number']} {u['address']['street']}, {u['address']['city']}"
         user = User(
-            username=u['username'],
             email=u['email'],
             password=generate_password_hash(u['password']),
             full_name=full_name,

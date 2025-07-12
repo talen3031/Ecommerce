@@ -18,11 +18,10 @@ def setup_products(app):
 def user_token_and_id(client):
     # 註冊並登入
     client.post('/auth/register', json={
-        'username': 'orderuser',
-        'email': 'orderuser@example.com',
+        'email': 'cartuser@example.com',
         'password': '123456'
     })
-    login_res = client.post('/auth/login', json={'username': 'orderuser', 'password': '123456'})
+    login_res = client.post('/auth/login', json={'email': 'cartuser@example.com', 'password': '123456'})
     token = login_res.get_json()['access_token']
     user_id = login_res.get_json()['user_id']
     return token, user_id

@@ -7,10 +7,10 @@ import { useNavigate } from "react-router-dom";
 
 const categoryOptions = [
   { label: "全部", value: "" },
-  { label: "3C", value: 1 },
-  { label: "飾品", value: 2 },
-  { label: "男生衣服", value: 3 },
-  { label: "女生衣服", value: 4 },
+  { label: "褲子", value: 1 },
+  { label: "帽子", value: 2 },
+  { label: "上衣", value: 3 },
+  { label: "外套", value: 4 },
 ];
 
 // 型別安全判斷商品狀態

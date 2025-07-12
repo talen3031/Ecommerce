@@ -101,7 +101,7 @@ class Product(db.Model):
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), unique=True, nullable=False)
+    #username = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False)
     full_name = db.Column(db.String(255))
@@ -113,9 +113,7 @@ class User(db.Model):
     line_user_id = db.Column(db.String(50))
     line_display_name = db.Column(db.String(50))
     line_picture_url = db.Column(db.String(255))
-    @classmethod
-    def get_by_username(cls, username):
-        return cls.query.filter_by(username=username).first()
+  
 
     @classmethod
     def get_by_user_id(cls, user_id):
@@ -128,7 +126,6 @@ class User(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
-            "username": self.username,
             "email": self.email,
             "full_name": self.full_name,
             "address": self.address,

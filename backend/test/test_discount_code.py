@@ -9,12 +9,11 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 def admin_token(client):
     # 註冊管理員
     client.post('/auth/register', json={
-        'username': 'adminuser',
         'email': 'admin@example.com',
         'password': '123456',
         'role': 'admin'
     })
-    res = client.post('/auth/login', json={'username': 'adminuser', 'password': '123456'})
+    res = client.post('/auth/login', json={'email': 'admin@example.com', 'password': '123456'})
     token = res.get_json()['access_token']
     return token
 

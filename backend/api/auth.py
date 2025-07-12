@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from service.user_service import UserService
 from service.audit_service import AuditService
-from models import  User
-from flask_jwt_extended import  jwt_required
+from models import User
+from flask_jwt_extended import jwt_required
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -22,13 +22,9 @@ def register():
         schema:
           type: object
           required:
-            - username
             - email
             - password
           properties:
-            username:
-              type: string
-              example: "newuser"
             email:
               type: string
               example: "user@example.com"
@@ -66,41 +62,41 @@ def register():
           properties:
             error:
               type: string
-              example: "Missing username, email or password"
+              example: "Missing email or password"
       409:
-        description: 帳號或信箱已存在
+        description: 信箱已存在
         schema:
           type: object
           properties:
             error:
               type: string
-              example: "Username or email already exists"
+              example: "Email already exists"
     """
     data = request.json
-    username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-    role = data.get('role','user')
-    full_name = data.get('full_name',None) 
-    address = data.get('address',None) 
-    phone = data.get('phone',None) 
-    
+    role = data.get('role', 'user')
+    full_name = data.get('full_name', None)
+    address = data.get('address', None)
+    phone = data.get('phone', None)
+    if not email or not password:
+        return jsonify({'error': 'Missing email or password'}), 400
+
     user = UserService.create(
-    username = username, 
-    email = email, 
-    password = password, 
-    full_name = full_name, 
-    address = address, 
-    phone = phone, 
-    role = role
+        email=email,
+        password=password,
+        full_name=full_name,
+        address=address,
+        phone=phone,
+        role=role
     )
-   # 日誌
+    # 日誌
     AuditService.log(
         user_id=user.id,
         action='register',
         target_type='user',
         target_id=user.id,
-        description=f"User registered: username={username}, email={email}"
+        description=f"User registered: email={email}"
     )
     return jsonify({'message': 'Register success', 'user_id': user.id}), 201
 
@@ -120,12 +116,12 @@ def login():
         schema:
           type: object
           required:
-            - username
+            - email
             - password
           properties:
-            username:
+            email:
               type: string
-              example: "newuser"
+              example: "user@example.com"
             password:
               type: string
               example: "abc12345"
@@ -151,7 +147,7 @@ def login():
           properties:
             error:
               type: string
-              example: "Missing username or password"
+              example: "Missing email or password"
       401:
         description: 帳號或密碼錯誤
         schema:
@@ -159,39 +155,38 @@ def login():
           properties:
             error:
               type: string
-              example: "Invalid username or password"
+              example: "Invalid email or password"
     """
     data = request.json
-    username = data.get('username')
+    email = data.get('email')
     password = data.get('password')
 
-    if not username or not password:
-        return jsonify({'error': 'Missing username or password'}), 400
+    if not email or not password:
+        return jsonify({'error': 'Missing email or password'}), 400
 
     try:
-        result = UserService.login(username, password)
+        result = UserService.login(email, password)
         # 登入成功日誌
         AuditService.log(
             user_id=result["user_id"],
             action='login',
             target_type='user',
             target_id=result["user_id"],
-            description=f"User login success: username={username}"
+            description=f"User login success: email={email}"
         )
         return jsonify(result), 200
 
     except Exception as e:
         # 登入失敗日誌
-        user = User.get_by_username(username)
+        user = User.get_by_email(email)
         AuditService.log(
             user_id=user.id if user else None,
             action='login_fail',
             target_type='user',
             target_id=user.id if user else None,
-            description=f"User login failed: username={username}, error={str(e)}"
+            description=f"User login failed: email={email}, error={str(e)}"
         )
         return jsonify({'error': str(e)}), 401
-    
 
 # 登出
 @auth_bp.route('/logout', methods=['POST'])
@@ -199,8 +194,7 @@ def login():
 def logout():
     return jsonify({"message": "Logout success"})
 
-
-#忘記密碼：發送重設密碼連結
+# 忘記密碼：發送重設密碼連結
 @auth_bp.route('/forgot_password', methods=['POST'])
 def forgot_password():
     """
@@ -231,8 +225,7 @@ def forgot_password():
         return jsonify({"message": "If this email exists, a reset link will be sent"}), 200
 
     reset_link = UserService.send_reset_link(user_id=user.id)
-    
-    return jsonify({"message": f"If this email exists, a reset link{reset_link} will be sent"}), 200
+    return jsonify({"message": f"If this email exists, a reset link will be sent"}), 200
 
 @auth_bp.route('/reset_password', methods=['POST'])
 def reset_password():
@@ -267,7 +260,6 @@ def reset_password():
 
     if not token or not new_password:
         return jsonify({"error": "Missing token or new password"}), 400
-    
-    UserService.reset_password(token,new_password)
 
+    UserService.reset_password(token, new_password)
     return jsonify({"message": "Password has been reset"}), 200

@@ -18,17 +18,16 @@ def setup_category(app):
 def admin_token(client):
     # 註冊管理員帳號
     res = client.post('/auth/register', json={
-        'username': 'admin',
         'email': 'admin@example.com',
         'password': 'admin123'
     })
     # 手動升級為 admin
-    user = User.query.filter_by(username='admin').first()
+    user = User.query.filter_by(email='admin@example.com').first()
     user.role = 'admin'
     db.session.commit()
     # 登入拿 token
     res = client.post('/auth/login', json={
-        'username': 'admin',
+        'email': 'admin@example.com',
         'password': 'admin123'
     })
     return res.get_json()['access_token']

@@ -72,7 +72,6 @@ function AdminOrderList() {
   const columns = [
     { title: "訂單編號", dataIndex: "id" },
     { title: "用戶ID", dataIndex: "user_id" },
-    { title: "用戶名稱", dataIndex: "username" },
     {
       title: "訂單時間",
       dataIndex: "order_date",
@@ -143,7 +142,6 @@ function AdminOrderList() {
               <Descriptions column={1} bordered>
                 <Descriptions.Item label="訂單編號">{orderDetail.order_id}</Descriptions.Item>
                 <Descriptions.Item label="用戶ID">{orderDetail.user_id}</Descriptions.Item>
-                <Descriptions.Item label="用戶名稱">{orderDetail.username}</Descriptions.Item>
                 <Descriptions.Item label="下單時間">{formatDate(orderDetail.order_date)}</Descriptions.Item>
                 <Descriptions.Item label="訂單狀態">{orderDetail.status}</Descriptions.Item>
                 <Descriptions.Item label="總金額">{orderDetail.total}</Descriptions.Item>

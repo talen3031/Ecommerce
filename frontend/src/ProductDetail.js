@@ -4,10 +4,10 @@ import api from "./api";
 import { useNavigate, useParams } from "react-router-dom";
 
 const categoryMap = {
-  1: "3C產品",
-  2: "飾品",
-  3: "男生衣服",
-  4: "女生衣服"
+  1: "褲子",
+  2: "帽子",
+  3: "上衣",
+  4: "外套"
 };
 
 function ProductDetail() {

@@ -47,7 +47,6 @@ function UserList() {
 
   const columns = [
     { title: "會員ID", dataIndex: "id", sorter: true },
-    { title: "使用者名稱", dataIndex: "username" },
     { title: "Email", dataIndex: "email" },
     { title: "建立時間", dataIndex: "created_at" },
     // 你可再加更多欄位...

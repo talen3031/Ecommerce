@@ -26,7 +26,6 @@ function UserDetail() {
       <Spin spinning={loading}>
         {user ? (
           <Descriptions bordered column={1}>
-            <Descriptions.Item label="會員名稱">{user.full_name || user.username}</Descriptions.Item>
             <Descriptions.Item label="Email">{user.email}</Descriptions.Item>
             <Descriptions.Item label="電話">{user.phone}</Descriptions.Item>
             <Descriptions.Item label="地址">{user.address}</Descriptions.Item>
