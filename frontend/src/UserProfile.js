@@ -11,7 +11,7 @@ function UserProfile() {
 
   const LINE_CHANNEL_ID = "2007730728";
   const STATE = userId;
-  const REDIRECT_URI = encodeURIComponent("https://403c6978087b.ngrok-free.app/linemessage/callback");
+  const REDIRECT_URI = encodeURIComponent("https://ecommerce-backend-latest-6fr5.onrender.com/linemessage/callback");
   const lineLoginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${REDIRECT_URI}&scope=openid%20profile&state=${STATE}`;
   const navigate = useNavigate();
   const location = useLocation();

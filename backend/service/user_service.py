@@ -1,7 +1,7 @@
 from models import db, User,PasswordResetToken
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
-from exceptions import DuplicateError, UnauthorizedError
+from exceptions import DuplicateError, UnauthorizedError,NotFoundError
 import secrets
 from datetime import datetime, timedelta
 from utils.send_email import send_email
@@ -58,14 +58,14 @@ class UserService:
         db.session.add(reset_token)
         db.session.commit()
         # 發送重設信
-        reset_link = f"https://your-frontend/reset_password?token={token}"
+        reset_link = f"https://ecommerce-frontend-latest.onrender.com/login/reset_password?token={token}"
         user = User.get_by_user_id(user_id)
         
         if user and user.email:
-            subject = "【電商系統】密碼重設連結"
+            subject = "【Nerd.com】密碼重設連結"
             content = f"請點擊以下連結重設密碼：<br><a href='{reset_link}'>{reset_link}</a>"
             send_email(user.email, subject, content)
-        
+
         return reset_link
 
     @staticmethod
@@ -81,10 +81,10 @@ class UserService:
         if not user:
             raise ValueError("User not found")
 
-        # # 設定新密碼並註銷 token
-        # if generate_password_hash(new_password)==user.password:
-        #     raise DuplicateError("rest password can not be the same")
-
+        if generate_password_hash(new_password)==user.password:
+            raise DuplicateError("rest password can not be the same")
+        
+        # 設定新密碼並註銷 token
         user.password = generate_password_hash(new_password)
         reset_token.used = True
         db.session.commit()

@@ -231,7 +231,7 @@ def forgot_password():
         return jsonify({"message": "If this email exists, a reset link will be sent"}), 200
 
     reset_link = UserService.send_reset_link(user_id=user.id)
-
+    
     return jsonify({"message": f"If this email exists, a reset link{reset_link} will be sent"}), 200
 
 @auth_bp.route('/reset_password', methods=['POST'])

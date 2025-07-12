@@ -37,8 +37,8 @@ def create_app(test_config=None):
     app = Flask(__name__)
     CORS(app, supports_credentials=True)
     # 預設用正式資料庫
-    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI_LOCALHOST")
-    #app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
+    #app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI_LOCALHOST")
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = os.environ.get("JWT_SECRET_KEY", "your_default_jwt_key")
     Swagger(app, template=swagger_template)

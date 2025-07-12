@@ -85,25 +85,24 @@ function ProductList() {
           justifyContent: "center"
         }}
       >
-      <span
-        style={{
-          color: "#000",
-          fontWeight: 900,
-          fontSize: 32,
-          letterSpacing: 2,
-          fontFamily: "Oswald, 'Noto Sans TC', Arial, sans-serif",
-          userSelect: "none",
-          borderRight: "4px solid #000",
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          display: "inline-block",
-          animation: "typing 2.2s steps(8, end), blink-caret 0.7s step-end infinite",
-          width: "8.5ch"
-        }}
-      >
-        FLEXBOY
+        <span className="typing-banner">Nerd.com</span>
+        {/* 這段只需在 App 載入一次即可 */}
         <style>
           {`
+            .typing-banner {
+              color: #000;
+              font-weight: 900;
+              font-size: 32px;
+              letter-spacing: 2px;
+              font-family: Oswald, 'Noto Sans TC', Arial, sans-serif;
+              user-select: none;
+              border-right: 4px solid #000;
+              white-space: nowrap;
+              overflow: hidden;
+              display: inline-block;
+              animation: typing 2.2s steps(9, end), blink-caret 0.9s step-end infinite;
+              width: 9ch;
+            }
             @keyframes typing {
               from { width: 0 }
               to { width: 8ch }
@@ -113,8 +112,8 @@ function ProductList() {
             }
           `}
         </style>
-      </span>
       </div>
+
 
 
       {/* 假設你有 Drawer (側邊選單) 就維持原本寫法（不會被 Banner 蓋住） */}

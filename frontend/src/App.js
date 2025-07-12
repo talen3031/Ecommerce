@@ -13,7 +13,8 @@ import AdminPage from "./AdminPage";
 import EditProfile from "./EditProfile";
 import SidebarDrawer from "./SidebarDrawer";
 import LoginButton from "./LoginButton";
-import UserDetail from "./UserDetail"; // 記得import
+import UserDetail from "./UserDetail"; 
+import ResetPassword from "./ResetPassword"; 
 
 import 'antd/dist/reset.css';
 
@@ -48,7 +49,7 @@ function App() {
           <Route path="/profile/edit" element={loggedIn ? <EditProfile /> : <Navigate to="/login" />} />
           <Route path="/admin/users/:id" element={<UserDetail />} />
           <Route path="/admin" element={loggedIn && role === "admin" ? <AdminPage /> : <Navigate to="/login" />} />
-
+          <Route path="/reset_password" element={<ResetPassword />} />
           <Route path="*" element={<div>404 Not Found</div>} />
         </Routes>
       </div>
