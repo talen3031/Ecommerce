@@ -13,7 +13,7 @@ class UserService:
             raise ValueError("missing email or password")
         if User.query.filter_by(email=email).first():
             raise DuplicateError("Email already exists")
-        created_at = datetime.now()  # 正確拼法
+        created_at = datetime.now()
         hashed_pw = generate_password_hash(password)
         user = User(
             email=email,
@@ -21,7 +21,7 @@ class UserService:
             full_name=full_name,
             address=address,
             phone=phone,
-            created_at=created_at,   # 加逗號
+            created_at=created_at,  
             role=role
         )
         db.session.add(user)

@@ -49,7 +49,7 @@ def append_order_to_sheet(order, order_items=None):
     row = [
         safe_val(getattr(order, "id", None) or order.get("id")),
         safe_val(user_id),
-        safe_val(user_email),      # <<<<<< 改這裡
+        safe_val(user_email),     
         safe_val(user_fullname),
         safe_val(str(getattr(order, "order_date", None) or order.get("order_date"))),
         safe_val(float(getattr(order, "total", 0) or order.get("total", 0))),

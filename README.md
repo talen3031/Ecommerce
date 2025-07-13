@@ -1,29 +1,51 @@
-# 電商系統
+# 電商後台系統（Nerd.com Platform）
 
-## 專案簡介
-本專案為一套簡易電商 API 伺服器，後端採用 Python Flask 與 PostgreSQL 資料庫設計，前端採用 react 與 javascript 設計。
-我已部署至Render，可以訪問:
-https://ecommerce-frontend-latest.onrender.com (後端 :https://ecommerce-backend-latest-6fr5.onrender.com)
-(我使用 免費 Render Web Service，會自動 sleep，15 分鐘沒人用會關掉，但只要再次訪問會自動醒來，第一次加載會比較慢（最久可達 1 分鐘以上）)
+## 專案總覽
+
+本專案是一個**全端電商平台系統**，涵蓋後端 API、前端網站、用戶通知、資料庫、CI/CD、第三方服務整合與推薦系統等多種功能。  
+後端以 **Python Flask + PostgreSQL** 開發，前端採用 **React.js**，並已部署於 Render。
+
+- [線上前端 Demo](https://ecommerce-frontend-latest.onrender.com)
+- [後端 API（Swagger 文件）](https://ecommerce-backend-latest-6fr5.onrender.com/apidocs/)
+> 免費 Render Web Service 會在 15 分鐘無人使用時自動休眠，喚醒需 10~60 秒，請耐心等候。
+
+---
+## Requirement
+
+- Python >= 3.8
+- Flask
+- Flask-JWT-Extended
+- Flask-SQLAlchemy (或 SQLModel)
+- psycopg2
+- flasgger
+- pytest
+- PostgreSQL
+- sendgrid
+- dotenv
+- cloudinary
+- gspread 
+- google-auth
+- line-bot-sdk
+---
+
+## 系統架構特色
+
+- **系統架構（簡化圖）**：  
+    ```text
+    Client ←→ View Layer(前端React)←→ Route Layer(API Route) ←→ Service Layer ←→ ORM Layer ←→ PostgreSQL 資料庫
+    ```                
 - **RESTful API 設計、Swagger API 文件**
-- **JWT 認證／權限控管**（支援管理員與一般用戶）
-- **ORM 資料存取 (SQLAlchemy) 、資料庫實作 建立**
-- **測試自動化(pytest)**
-- **推薦功能(協同過濾)**
-  - 根據目前使用者購物出內容 找出同樣買了這些商品的其他客戶也買了什麼商品
-- **管理員操作日誌（Audit Log）**
-  - 重要操作（商品增刪改、結帳、購物車異動、用戶登入/註冊...）皆自動寫入日誌表，便於稽核與追蹤
-- **分頁查詢**
-  - 商品/訂單列表等查詢皆支援分頁
-- **整合第三方API (用戶自動通知 Email)**
-  - 本專案整合 SendGrid 提供自動通知 Email** 例如當有商品新增特價活動時，若用戶購物車有該商品，會主動通知用戶。
-- **Service Layer**
-  - 從MVC架構中分離出service layer，將商業邏輯與資料查詢分離，易於擴充與單元測試。 
-- **容器化 (Docker)**
-  - 前端 (React)、後端 (Flask) 及資料庫 (PostgreSQL) 各自獨立打包成 Docker image。
-- **CI/CD 流程 (GitHub Actions + Docker Hub)**
-  - 執行 pytest(intergration test) 成功後 build & push backend/frontend Docker image
-  - CI/CD流程圖
+- **JWT 認證／權限控管**（區分管理員、一般用戶）
+- **ORM（SQLAlchemy）**
+- **Service Layer 商業邏輯分層**
+- **自動化測試（pytest）** ：Intergration TEST 整合測試
+- **推薦系統**：協同過濾、個人化推薦
+- **操作稽核日誌（Audit Log）**：所有關鍵操作皆自動記錄至Audit Log
+- **第三方 API 整合**：SendGrid Email、LINE Messaging API、Cloudinary 圖片雲
+- **Docker 容器化**：  前端 (React)、後端 (Flask) 及資料庫 (PostgreSQL) 各自獨立打包成 Docker image。
+- **CI/CD 自動化部署**（GitHub Actions + Docker Hub）
+    - 執行 pytest(intergration test) 成功後 build & push backend/frontend Docker image
+    - CI/CD流程圖
     ```text
     Git push / PR
         │
@@ -48,79 +70,69 @@ https://ecommerce-frontend-latest.onrender.com (後端 :https://ecommerce-backen
                   ├── build frontend image
                   └── push 到 Docker Hub (talen3031/ecommerce-backend:latest, frontend:latest)
     ```
+
+    
 ---
 
-## Requirement
+## 主要技術
 
-- Python >= 3.8
-- Flask
-- Flask-JWT-Extended
-- Flask-SQLAlchemy (或 SQLModel)
-- psycopg2
-- flasgger
-- pytest
-- PostgreSQL
-- sendgrid
-- dotenv
-- cloudinary
+- **後端**：Python 3.8+ / Flask / Flask-JWT-Extended / SQLAlchemy / Flasgger / psycopg2 / dotenv
+- **資料庫**：PostgreSQL
+- **前端**：React.js / Ant Design / Axios
+- **測試**：pytest
+- **DevOps**：Docker  / GitHub Actions / Docker Hub
+- **雲端整合**：Render（主機及資料庫部署）、SendGrid（Email）、Cloudinary（圖片上傳）、LINE Messaging API（綁定後可即時通知）
+
 ---
 
-## 主要功能
+## 功能總覽
 
-### 用戶（User）
-  - 註冊、登入（JWT）、權限控管（管理員/一般用戶）
-  - 查詢個人資訊／管理員查詢全用戶
-  - 忘記密碼／重新設定密碼
+### 1. 用戶管理
+- 註冊、登入、JWT 驗證
+- 查詢個人／全部用戶資料（管理員專屬）
+- 重設密碼（Email 發送驗證連結）
+- 綁定 LINE 帳號（登入／通知）
 
-### 商品（Product）
-  - 查詢（支援分頁、搜尋、分類篩選）
-  - 新增／修改／刪除（管理員）
-  - 商品唯一性檢查
-  - 商品特價功能
-  - 商品上下架功能
+### 2. 商品系統
+- 商品查詢（支援分頁、分類、關鍵字、價格區間）
+- 管理員新增／修改／刪除／上下架商品
+- 商品唯一性檢查
+- 圖片上傳（Cloudinary）
+- 商品特價設定（區間／折扣）
 
-### 購物車（Cart）
-  - 加入／移除商品
-  - 調整商品數量
-  - 查詢購物車
-  - 結帳（可選全部或指定商品結帳）
+### 3. 購物車系統
+- 加入／移除商品、調整數量
+- 查詢目前購物車（僅顯示未結帳的 active 狀態）
+- 支援部分結帳（選擇部分商品進行結帳）
+- 分頁查詢、推薦相關商品
 
-### 訂單（Order）
-  - 歷史訂單查詢（支援分頁）
-  - 查詢單筆訂單明細
-  - 訂單狀態流轉（取消、出貨等）
+### 4. 訂單管理
+- 下單（結帳）、歷史訂單查詢、明細查詢
+- 訂單狀態流轉
+- 用戶可取消、查詢自己的訂單，管理員可查詢所有訂單、調整狀態
 
-### 自動 Email 通知功能
-  - 用戶購物車結帳成功，系統自動發送訂單成立信到用戶信箱。
-  - 訂單狀態（如付款成功、出貨、完成、取消等）異動時，自動寄信通知用戶。 
-  - 當有商品新增特價活動時，若用戶購物車有該商品，會主動通知用戶。
+### 5. 折扣碼與優惠券
+- 管理員新增／停用折扣碼，支援金額與折扣率兩種型態(ex.折扣100元 or 9折)
+- 支援專屬商品折扣、滿額限制、總次數／每人次數限制
+- 用戶購物車可查詢並套用折扣碼，結帳時自動計算
 
-### 推薦功能 (你可能喜歡...)
-  - 個人推薦(根據使用者訂單紀錄)
-  - 協同過濾(根據目前使用者購物出內容 找出同樣買了這些商品的其他客戶也買了什麼商品)
+### 6. 推薦商品
+- **個人推薦**：依用戶歷史訂單，推薦同分類熱賣商品
+- **購物車推薦**：根據購物車內容推薦相關商品
+- **協同過濾**：推薦其他同時購買「你購物車內商品」的客戶還買過哪些商品
 
-### 操作日誌（Audit Log）
-  - 所有重要資料異動皆自動記錄，包含：
-  - 商品增刪改
-  - 用戶註冊／登入／登入失敗
-  - 購物車商品加入／移除／數量調整／結帳
-  - 訂單建立與狀態修改
-  - 日誌查詢介面（限管理員）
+### 7. 通知系統
+- **Email 通知**：訂單成立／異動、特價提醒、忘記密碼等自動發信
+- **LINE web message API**：訂單成立、狀態變更推播通知，購物車商品特價提醒
+- **日誌系統（Audit Log）**：所有重要操作皆自動記錄於資料庫，便於稽核與追蹤
 
-## 容器化 (Docker) 與 CI/CD 流程 (GitHub Actions + Docker Hub)
+### 8. 圖片雲端上傳
+- 商品圖片可上傳至 Cloudinary，返回雲端公開網址
 
-### 容器化 (Docker)
+### 9. Swagger API 文件
+- 內建 `/apidocs/` 提供全 API 自動文件，可直接線上測試
+- https://ecommerce-backend-latest-6fr5.onrender.com/apidocs/
 
-前端 (React)、後端 (Flask) 及資料庫 (PostgreSQL) 各自獨立打包成 Docker image。可藉由 `docker-compose` 快速在任意平台啟動完整開發/測試/部署環境。
-
-#### 快速啟動
-
-```bash
-docker-compose up --build
-```
-
-###  CI/CD 流程 (GitHub Actions + Docker Hub)
-- **GitHub Actions workflow**
-  - 每次 Push 到 main/master 分支，先執行pytest，成功後自動啟動 GitHub Actions workflow，分別 build backend/frontend Docker image，自動推送到 Docker Hub（以 latest 標籤），專案根目錄下的 .github/workflows/cicd.yml 定義了完整自動化流程
-- **伺服器端部署/升級**
-  - 伺服器可直接 docker pull 取回最新版 image，一鍵重啟服務，快速同步最新程式
+### 10. CI/CD 與 Docker
+- 開發、測試、部署全自動化，CI 通過後自動 build/push 至 Docker Hub
+---

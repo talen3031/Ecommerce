@@ -163,7 +163,7 @@ class CartService:
         # ==== line_bot 傳送訊息 給以綁定line的user ========
         send_line_notify_order_created(user, order, order_items)
         
-        # ==== 同步 Google Sheet ====
+        # ==== 同步 Google Sheet ==== (取消 不實用)
         #append_order_to_sheet(order, order_items)
 
         return {

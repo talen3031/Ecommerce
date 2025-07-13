@@ -28,6 +28,7 @@ function UserDetail() {
           <Descriptions bordered column={1}>
             <Descriptions.Item label="Email">{user.email}</Descriptions.Item>
             <Descriptions.Item label="電話">{user.phone}</Descriptions.Item>
+            <Descriptions.Item label="全名">{user.full_name}</Descriptions.Item>
             <Descriptions.Item label="地址">{user.address}</Descriptions.Item>
             {/* 可以再加更多欄位 */}
           </Descriptions>
