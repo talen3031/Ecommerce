@@ -1,11 +1,11 @@
-# 電商後台系統（Nerd.com Platform）
+# 電商後台系統（Nerd.com）
 
 ## 專案總覽
 
-本專案是一個**全端電商平台系統**，涵蓋後端 API、前端網站、用戶通知、資料庫、CI/CD、第三方服務整合與推薦系統等多種功能。  
+本專案是一個**全端電商平台Nerd.com**，涵蓋後端 API、前端網站、用戶通知、資料庫、CI/CD、第三方服務整合與推薦系統等多種功能。  
 後端以 **Python Flask + PostgreSQL** 開發，前端採用 **React.js**，並已部署於 Render。
 
-- [線上前端 Demo](https://ecommerce-frontend-latest.onrender.com)
+- [Nerd.com](https://ecommerce-frontend-latest.onrender.com)
 - [後端 API（Swagger 文件）](https://ecommerce-backend-latest-6fr5.onrender.com/apidocs/)
 > 免費 Render Web Service 會在 15 分鐘無人使用時自動休眠，喚醒需 10~60 秒，請耐心等候。
 
