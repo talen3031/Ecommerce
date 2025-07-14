@@ -81,6 +81,7 @@ def register():
     phone = data.get('phone', None)
     if not email or not password:
         return jsonify({'error': 'Missing email or password'}), 400
+  
 
     user = UserService.create(
         email=email,

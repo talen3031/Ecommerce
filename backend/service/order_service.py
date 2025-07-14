@@ -1,4 +1,4 @@
-from models import db, Order,Product,User
+from models import db, Order,Product,User,DiscountCode
 from exceptions import NotFoundError
 from utils.notify_util import send_email_notify_user_order_status,send_line_notify_user_order_status
 class OrderService:
@@ -48,12 +48,18 @@ class OrderService:
                 "price": float(product.get_final_price()),
                 "quantity": item.quantity
             })
+        # if order.discount_code_id:
+        #     dc = DiscountCode.get_by_id(order.discount_code_id)
+
         result = {
             "order_id": order.id,
             "user_id": order.user_id,
             "order_date": str(order.order_date),
             "total": float(order.total),
             "status": order.status,
+            #"discount_code": dc.to_dict(),
+            "discount_code_id": order.discount_code_id,
+            "discount_amount": order.discount_amount,
             "items": items
         }
         return result

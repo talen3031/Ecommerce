@@ -627,12 +627,13 @@ def apply_discount(user_id):
     if not cart or not cart.cart_items:
         return jsonify({"error": "購物車為空"}), 400
 
-    ok, msg, dc, discounted_total, discount_amount = DiscountService.apply_discount_code(user_id, cart, code)
-    
+    ok, msg, dc, discounted_total, discount_amount, rule_msg ,used_coupon= DiscountService.apply_discount_code(user_id, cart, code)
     return jsonify({
         "success": ok,
         "message": msg,
         "discounted_total": discounted_total,
         "discount_amount": discount_amount,
-        "discount_code": dc.to_dict() if dc else None
+        "rule_msg": rule_msg,
+        "discount_code": dc.to_dict() if dc else None,
+        "used_coupon": used_coupon,
     })

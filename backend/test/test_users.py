@@ -99,3 +99,50 @@ def test_recommend_for_user(client, new_user, admin_token):
     assert res.status_code == 200
     data = res.get_json()
     assert any(item['title'] == 'C' for item in data)
+
+def test_user_permission(client, new_user):
+    user1 = new_user("user1@example.com")
+    user2 = new_user("user2@example.com")
+    # user2 查詢 user1 資料
+    res = client.get(f'/users/{user1["user_id"]}', headers={'Authorization': f'Bearer {user2["token"]}'})
+    assert res.status_code == 403
+    # user2 修改 user1
+    res = client.patch(f'/users/{user1["user_id"]}', json={'full_name': 'Hack'}, headers={'Authorization': f'Bearer {user2["token"]}'})
+    assert res.status_code == 403
+
+def test_user_unauthorized_access(client, new_user):
+    user = new_user("unauth@example.com")
+    # 沒帶 token 查詢
+    res = client.get(f'/users/{user["user_id"]}')
+    assert res.status_code == 401
+    # 沒帶 token 修改
+    res = client.patch(f'/users/{user["user_id"]}', json={'full_name': 'Nope'})
+    assert res.status_code == 401
+
+def test_get_all_users_permission(client, new_user):
+    user = new_user("notadmin@example.com")
+    res = client.get('/users/all', headers={'Authorization': f'Bearer {user["token"]}'})
+    assert res.status_code in (401, 403)
+
+def test_get_update_user_notfound(client, admin_token):
+    # 查不存在用戶
+    res = client.get('/users/999999', headers={'Authorization': f'Bearer {admin_token}'})
+    assert res.status_code == 404
+    # 改不存在用戶
+    res = client.patch('/users/999999', json={'full_name': 'none'}, headers={'Authorization': f'Bearer {admin_token}'})
+    assert res.status_code == 404
+
+def test_patch_user_empty_payload(client, new_user):
+    user = new_user("patchblank@example.com")
+    res = client.patch(f'/users/{user["user_id"]}', json={}, headers={'Authorization': f'Bearer {user["token"]}'})
+    assert res.status_code in (400, 422)
+
+def test_recommend_permission(client, new_user):
+    user1 = new_user("rr1@example.com")
+    user2 = new_user("rr2@example.com")
+    # user2 嘗試獲得 user1 的推薦
+    res = client.get(f'/users/{user1["user_id"]}/recommend', headers={'Authorization': f'Bearer {user2["token"]}'})
+    assert res.status_code == 403
+    # 未登入
+    res = client.get(f'/users/{user1["user_id"]}/recommend')
+    assert res.status_code == 401

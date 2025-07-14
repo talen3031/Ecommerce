@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Form, Input, InputNumber, DatePicker, Switch, message, Space } from "antd";
+import { Table, Button, Modal, Form, Input, InputNumber, DatePicker, Switch, message, Space, Select } from "antd";
 import api from "./api";
 import dayjs from "dayjs";
 
@@ -7,8 +7,19 @@ function DiscountCodeAdmin() {
   const [codes, setCodes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [addVisible, setAddVisible] = useState(false);
+  const [products, setProducts] = useState([]);
 
   const [form] = Form.useForm();
+
+  // 取得商品清單（for 指定商品折扣碼）
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get("/products/admin?per_page=1000");
+      setProducts(res.data.products || []);
+    } catch (err) {
+      setProducts([]);
+    }
+  };
 
   // 取得折扣碼清單
   const fetchCodes = async () => {
@@ -22,13 +33,17 @@ function DiscountCodeAdmin() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchCodes(); }, []);
+  useEffect(() => { 
+    fetchCodes(); 
+    fetchProducts();
+  }, []);
 
   // 新增折扣碼
   const handleAdd = async (values) => {
     try {
       const data = {
         ...values,
+        product_id: values.product_id === "all" ? null : values.product_id,
         valid_from: values.valid_from.format("YYYY-MM-DDTHH:mm:ss"),
         valid_to: values.valid_to.format("YYYY-MM-DDTHH:mm:ss"),
         discount: values.discount || null,
@@ -55,9 +70,17 @@ function DiscountCodeAdmin() {
     }
   };
 
+  // 輔助：根據 product_id 找名稱
+  const getProductName = (product_id) => {
+    if (!product_id) return "全站通用";
+    const product = products.find(p => p.id === product_id || p.id === Number(product_id));
+    return product ? product.title : product_id;
+  };
+
   const columns = [
     { title: "折扣碼", dataIndex: "code" },
     { title: "描述", dataIndex: "description" },
+    { title: "指定商品", dataIndex: "product_id", render: v => getProductName(v) },
     { title: "折扣%", dataIndex: "discount", render: v => v ? (v * 100 + "%") : "-" },
     { title: "折抵金額", dataIndex: "amount", render: v => v ? ("NT$" + v) : "-" },
     { title: "滿額", dataIndex: "min_spend", render: v => v ? ("NT$" + v) : "-" },
@@ -108,6 +131,23 @@ function DiscountCodeAdmin() {
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input />
+          </Form.Item>
+          {/* 這裡改為下拉選單 */}
+          <Form.Item name="product_id" label="指定商品">
+            <Select
+              placeholder="選擇指定商品（預設全站通用）"
+              allowClear
+              defaultValue="all"
+              options={[
+                { label: "全站通用", value: "all" },
+                ...products
+                  .filter(p => p.is_active)
+                  .map(p => ({
+                    label: `${p.title} (ID:${p.id})`,
+                    value: p.id
+                  }))
+              ]}
+            />
           </Form.Item>
           <Form.Item label="折扣%（0.9 = 9折，與折抵金額擇一）" name="discount">
             <InputNumber min={0.01} max={1} step={0.01} style={{ width: "100%" }} />

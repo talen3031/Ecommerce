@@ -1,47 +1,96 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, message, Spin, Descriptions, Drawer, Popconfirm } from "antd";
 import api from "./api";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Table, Button, Spin, Descriptions, Drawer, message, Modal } from "antd";
+
+const ORDER_STATUS_OPTIONS = [
+  { value: "pending", label: "待處理" },
+  { value: "paid", label: "已付款" },
+  { value: "processing", label: "處理中" },
+  { value: "shipped", label: "運送中" },
+  { value: "delivered", label: "已到貨" },
+  { value: "cancelled", label: "已取消" },
+  { value: "refunded", label: "已退款" },
+  { value: "returned", label: "已退貨" }
+];
+const STATUS_LABEL_MAP = Object.fromEntries(ORDER_STATUS_OPTIONS.map(opt => [opt.value, opt.label]));
 
 function OrderList() {
   const userId = localStorage.getItem("user_id");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [orderDetail, setOrderDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const params = useParams();
 
+  // 加總原始金額
+  const calcOriginalTotal = (items) => {
+    if (!items) return 0;
+    return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  };
+  const showCancelConfirm = (orderId) => {
+  Modal.confirm({
+    title: "取消訂單",
+    content: "確定要取消這筆訂單嗎？",
+    okText: "確定取消",
+    cancelText: "返回",
+    okType: "danger",
+    onOk: () => handleCancelOrder(orderId)
+  });
+};
+
+  const handleCancelOrder = async(orderId) => {
+    try {
+      await api.post(`/orders/${orderId}/cancel`);
+      message.success("訂單已取消");
+      setDrawerOpen(false); // 關閉詳情
+      fetchOrders();        // 重新載入訂單
+    } catch (err) {
+      message.error("取消失敗：" + (err.response?.data?.error || err.message));
+    }
+  };
   // 取得所有訂單
   const fetchOrders = async () => {
-    if (!userId) {
-      message.error("請先登入");
-      return;
-    }
+    if (!userId) return;
     setLoading(true);
     try {
       const res = await api.get(`/orders/${userId}`);
       setOrders(res.data.orders || []);
     } catch (err) {
-      message.error("查詢訂單失敗");
+      // 可自訂錯誤處理
     }
     setLoading(false);
   };
 
-  // 取消訂單
-  const handleCancelOrder = async (orderId) => {
+  // 取得訂單詳情
+  const fetchOrderDetail = async (orderId) => {
+    setDetailLoading(true);
     try {
-      await api.post(`/orders/${orderId}/cancel`);
-      message.success("已取消訂單！");
-      fetchOrders();
+      const res = await api.get(`/orders/order/${orderId}`);
+      setOrderDetail(res.data);
+      setDrawerOpen(true);
     } catch (err) {
-      message.error("取消失敗：" + (err.response?.data?.error || err.message));
+      // 可自訂錯誤處理
     }
+    setDetailLoading(false);
   };
 
   useEffect(() => {
     fetchOrders();
     // eslint-disable-next-line
   }, []);
+
+  // Drawer 展開的 orderId（取自路徑或狀態）
+  const match = location.pathname.match(/^\/orders\/(\d+)/);
+  const drawerOrderId = match ? match[1] : null;
+
+  useEffect(() => {
+    if (drawerOrderId) {
+      fetchOrderDetail(drawerOrderId);
+    }
+  }, [drawerOrderId]);
 
   const columns = [
     { title: "訂單編號", dataIndex: "id" },
@@ -50,37 +99,77 @@ function OrderList() {
       dataIndex: "order_date",
       render: (value) => formatDateandhours(value),
     },
-    { title: "狀態", dataIndex: "status" },
+    {
+      title: "狀態",
+      dataIndex: "status",
+      render: value => STATUS_LABEL_MAP[value] || value
+    },
     { title: "總金額", dataIndex: "total" },
     {
       title: "操作",
       render: (_, record) => (
-        <span>
-          <Button
-            style={{ marginRight: 8 }}
-            onClick={() => navigate(`/orders/${record.id}`)}
-          >
-            查看明細
-          </Button>
-          {/* 只要訂單不是已取消才顯示取消按鈕 */}
-          {record.status !== "已取消" && (
-            <Popconfirm
-              title="你確定要取消這筆訂單嗎？"
-              okText="確定"
-              cancelText="取消"
-              onConfirm={() => handleCancelOrder(record.id)}
-            >
-              <Button danger type="primary">取消</Button>
-            </Popconfirm>
-          )}
-        </span>
+        <Button onClick={() => {
+          setDrawerOpen(true);
+          fetchOrderDetail(record.id);
+          navigate(`/orders/${record.id}`);
+        }}>
+          查看明細
+        </Button>
       ),
     },
   ];
 
-  // 判斷有沒有 orderId（顯示 drawer）
-  const match = location.pathname.match(/^\/orders\/(\d+)/);
-  const drawerOrderId = match ? match[1] : null;
+  // 依需求：有折扣才顯示三行，沒折扣只顯示總金額
+  function renderAmountInfo() {
+    if (!orderDetail) return null;
+    const hasDiscount =
+      orderDetail.discount_amount && Number(orderDetail.discount_amount) > 0;
+    const total = calcOriginalTotal(orderDetail.items);
+
+    if (hasDiscount) {
+      return (
+        <div style={{
+          marginTop: 16,
+          background: "#fafbfc",
+          border: "1px solid #e5e6e8",
+          borderRadius: 8,
+          padding: "14px 18px 8px 18px",
+          maxWidth: 380,
+          marginLeft: "auto"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ color: "#555" }}>總金額：</div>
+            <div>NT$ {total}</div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <div style={{ color: "#fa541c" }}>折扣金額：</div>
+            <div>- NT$ {orderDetail.discount_amount}</div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+            <div style={{ color: "#1890ff" }}>折扣後金額：</div>
+            <div>NT$ {orderDetail.total}</div>
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div style={{
+          marginTop: 16,
+          background: "#fafbfc",
+          border: "1px solid #e5e6e8",
+          borderRadius: 8,
+          padding: "14px 18px 8px 18px",
+          maxWidth: 380,
+          marginLeft: "auto"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}>
+            <div style={{ color: "#555" }}>總金額：</div>
+            <div>NT$ {orderDetail.total}</div>
+          </div>
+        </div>
+      );
+    }
+  }
 
   return (
     <div style={{ maxWidth: 900, margin: "40px auto" }}>
@@ -93,69 +182,78 @@ function OrderList() {
           pagination={false}
         />
       </Spin>
-      {/* drawer 根據網址是否為 /orders/:orderId 顯示 */}
-      <OrderDetailDrawer
-        open={!!drawerOrderId}
-        orderId={drawerOrderId}
-        onClose={() => navigate("/orders")}
-      />
-    </div>
-  );
-}
-
-// Drawer元件，根據 orderId 讀取訂單詳情
-function OrderDetailDrawer({ open, orderId, onClose }) {
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [orderDetail, setOrderDetail] = useState(null);
-
-  useEffect(() => {
-    if (!open || !orderId) return;
-    setDetailLoading(true);
-    api.get(`/orders/order/${orderId}`)
-      .then(res => setOrderDetail(res.data))
-      .catch(() => setOrderDetail(null))
-      .finally(() => setDetailLoading(false));
-  }, [open, orderId]);
-
-  return (
-    <Drawer
-      title={`訂單明細 ${orderDetail?.id || ""}`}
-      placement="right"
-      width={520}
-      onClose={onClose}
-      open={open}
-    >
-      <Spin spinning={detailLoading}>
-        {orderDetail ? (
-          <div>
-            <Descriptions column={1} bordered>
-              <Descriptions.Item label="訂單編號">{orderDetail.order_id}</Descriptions.Item>
-              <Descriptions.Item label="下單時間">{formatDate(orderDetail.order_date)}</Descriptions.Item>
-              <Descriptions.Item label="訂單狀態">{orderDetail.status}</Descriptions.Item>
-              <Descriptions.Item label="總金額">{orderDetail.total}</Descriptions.Item>
-            </Descriptions>
-            <h4 style={{ marginTop: 24 }}>商品清單</h4>
-            <Table
-              dataSource={orderDetail.items || []}
-              rowKey="product_id"
-              pagination={false}
-              size="small"
-              columns={[
-                { title: "商品名稱", dataIndex: "title" },
-                { title: "單價", dataIndex: "price" },
-                { title: "數量", dataIndex: "quantity" },
-                { title: "小計", render: (_, r) => r.price * r.quantity },
-              ]}
-            />
-            <div style={{ textAlign: "right", marginTop: 12, fontWeight: "bold" }}>
-              總金額：NT$ {orderDetail.total}
+      {/* Drawer 詳情 */}
+      <Drawer
+        title={`訂單明細`}
+        placement="right"
+        width={600}
+        onClose={() => {
+          setDrawerOpen(false);
+          navigate("/orders");
+        }}
+        open={drawerOpen}
+      >
+        <Spin spinning={detailLoading}>
+          {orderDetail ? (
+            <div>
+              <Descriptions column={1} bordered>
+                <Descriptions.Item label="訂單編號">{orderDetail.order_id}</Descriptions.Item>
+                <Descriptions.Item label="下單時間">{formatDate(orderDetail.order_date)}</Descriptions.Item>
+                <Descriptions.Item label="訂單狀態">{STATUS_LABEL_MAP[orderDetail.status] || orderDetail.status}</Descriptions.Item>
+                <Descriptions.Item label="訂單金額">NT$ {orderDetail.total}</Descriptions.Item>
+              </Descriptions>
+              <h4 style={{ marginTop: 24 }}>商品清單</h4>
+              <Table
+                dataSource={orderDetail.items || []}
+                rowKey="product_id"
+                pagination={false}
+                size="small"
+                columns={[
+                  { title: "商品名稱", dataIndex: "title" },
+                  {
+                    title: "單價",
+                    render: (_, r) => (
+                      r.sale_price && r.sale_price !== r.price ? (
+                        <>
+                          <span style={{ color: "#fa541c", fontWeight: 600 }}>NT${r.sale_price}</span>
+                          <span style={{ textDecoration: "line-through", color: "#888", marginLeft: 7, fontSize: 13 }}>NT${r.price}</span>
+                        </>
+                      ) : (
+                        <span>NT${r.price}</span>
+                      )
+                    )
+                  },
+                  { title: "數量", dataIndex: "quantity" },
+                  {
+                    title: "小計",
+                    render: (_, r) => {
+                      const subtotal = (r.sale_price && r.sale_price !== r.price ? r.sale_price : r.price) * r.quantity;
+                      return <span>NT${subtotal}</span>;
+                    }
+                  },
+                ]}
+              />
+              {/* 金額總結資訊依折扣條件顯示 */}
+              {renderAmountInfo()}
+              {/* 只有特定狀態才可取消 */}
+              {orderDetail && !["cancelled", "delivered", "refunded", "returned"].includes(orderDetail.status) && (
+                <div style={{ textAlign: "right", marginTop: 24 }}>
+                  <Button
+                    danger
+                    type="primary"
+                    onClick={() => showCancelConfirm(orderDetail.order_id)}
+                  >
+                    取消訂單
+                  </Button>
+                </div>
+              )}
             </div>
-          </div>
-        ) : (
-          <div>無訂單資料</div>
-        )}
-      </Spin>
-    </Drawer>
+          ) : (
+            <div>無訂單資料</div>
+          )}
+        </Spin>
+      </Drawer>
+    </div>
   );
 }
 
@@ -169,14 +267,13 @@ function formatDateandhours(str) {
   const min = String(d.getMinutes()).padStart(2, "0");
   return `${y}-${m}-${day} ${hour}:${min}`;
 }
+
 function formatDate(str) {
   if (!str) return "";
   const d = new Date(str);
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  const hour = d.getHours();
-  const min = String(d.getMinutes()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 

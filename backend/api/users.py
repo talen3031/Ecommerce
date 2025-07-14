@@ -210,6 +210,9 @@ def update_user(user_id):
               type: string
               example: "User not found"
     """
+    user = User.get_by_user_id(user_id=user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
     current_user = get_jwt_identity()
     if int(current_user) != user_id:
         return jsonify({"error": "you only can update your own information"}), 403
@@ -217,6 +220,10 @@ def update_user(user_id):
     full_name = res.get('full_name')
     phone = res.get('phone')
     address = res.get('address')
+    if not res or not any([full_name, address, phone]):  # 所有欄位都沒傳
+      return jsonify({'error': 'No update fields provided'}), 400
+    
+    
     user = UserService.update_user_info(user_id, full_name=full_name, address=address, phone=phone)
     return jsonify(user.to_dict())
 

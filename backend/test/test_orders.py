@@ -71,3 +71,55 @@ def test_order_flow(client, user_token_and_id):
     res = client.post(f'/orders/{order_id}/cancel', headers={'Authorization': f'Bearer {token}'})
     print("取消訂單 resp：", res.status_code, res.get_json())
     assert res.status_code == 400
+
+def admin_token(client):
+    client.post('/auth/register', json={'email': 'admin@example.com', 'password': 'adminpw', 'role': 'admin'})
+    login_res = client.post('/auth/login', json={'email': 'admin@example.com', 'password': 'adminpw'})
+    return login_res.get_json()['access_token']
+
+def test_get_all_orders_as_admin(client, user_token_and_id):
+    token, user_id = user_token_and_id
+    # 建立一筆訂單
+    client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 1}, headers={'Authorization': f'Bearer {token}'})
+    client.post(f'/carts/{user_id}/checkout', json={'items': [{'product_id': 1, 'quantity': 1}]}, headers={'Authorization': f'Bearer {token}'})
+    # 用 admin 查詢
+    admin_tok = admin_token(client)
+    res = client.get('/orders/all', headers={'Authorization': f'Bearer {admin_tok}'})
+    print("管理員查詢所有訂單：", res.status_code, res.get_json())
+    assert res.status_code == 200
+    assert res.get_json()['total'] >= 1
+
+def test_update_order_status_error(client, user_token_and_id):
+    token, user_id = user_token_and_id
+    # 下訂單
+    client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 1}, headers={'Authorization': f'Bearer {token}'})
+    res = client.post(f'/carts/{user_id}/checkout', json={'items': [{'product_id': 1, 'quantity': 1}]}, headers={'Authorization': f'Bearer {token}'})
+    order_id = res.get_json()['order_id']
+    # 設定錯誤狀態
+    res = client.patch(f'/orders/{order_id}/status', json={'status': 'WRONG'}, headers={'Authorization': f'Bearer {token}'})
+    assert res.status_code == 400
+    # 設定一樣的狀態
+    res = client.patch(f'/orders/{order_id}/status', json={'status': 'pending'}, headers={'Authorization': f'Bearer {token}'})
+    assert res.status_code == 400
+
+def test_cancel_order_wrong_status(client, user_token_and_id):
+    token, user_id = user_token_and_id
+    # 下訂單並設已付款
+    client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 1}, headers={'Authorization': f'Bearer {token}'})
+    res = client.post(f'/carts/{user_id}/checkout', json={'items': [{'product_id': 1, 'quantity': 1}]}, headers={'Authorization': f'Bearer {token}'})
+    order_id = res.get_json()['order_id']
+    client.patch(f'/orders/{order_id}/status', json={'status': 'paid'}, headers={'Authorization': f'Bearer {token}'})
+    # 這時再取消
+    res = client.post(f'/orders/{order_id}/cancel', headers={'Authorization': f'Bearer {token}'})
+    assert res.status_code == 400
+
+def test_get_order_detail_404(client, user_token_and_id):
+    token, _ = user_token_and_id
+    # 查一個不存在的 order_id
+    res = client.get(f'/orders/order/9999999999', headers={'Authorization': f'Bearer {token}'})
+    assert res.status_code == 404
+
+def test_cancel_order_404(client, user_token_and_id):
+    token, _ = user_token_and_id
+    res = client.post(f'/orders/999999/cancel', headers={'Authorization': f'Bearer {token}'})
+    assert res.status_code == 404

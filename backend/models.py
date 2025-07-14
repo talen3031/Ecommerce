@@ -172,7 +172,9 @@ class Order(db.Model):
             "user_id": self.user_id,
             "order_date": self.order_date.isoformat() if self.order_date else None,
             "total": float(self.total) if self.total is not None else 0.0,
-            "status": self.status
+            "status": self.status,
+            "discount_code_id":self.discount_code_id,
+            "discount_amount":self.discount_amount
         }
         if include_user:
             data["user"] = self.user.to_dict() if self.user else None
@@ -312,7 +314,9 @@ class DiscountCode(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
     product = db.relationship('Product', backref=db.backref('discount_codes', lazy=True))
-
+    @classmethod
+    def get_by_id(cls, discount_code_id):
+        return cls.query.filter_by(id=discount_code_id).first()
     def is_valid(self, user_id=None, order_total=None, user_usage_count=0):
         now = datetime.now()
         if not self.is_active:

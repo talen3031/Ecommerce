@@ -109,14 +109,15 @@ class CartService:
 
         # 2. 折扣碼驗證（失敗時直接 raise，不建立訂單）
         if discount_code:
-            ok, msg, dc, discounted_total, discount_amount = DiscountService.apply_discount_code(
+            ok, msg, dc, discounted_total, discount_amount, rule_msg,used_coupon  = DiscountService.apply_discount_code(
                 user_id, cart, discount_code, items_to_checkout
             )
             if not ok:
                 raise ValueError(f"折扣碼不可用: {msg}")
             total = discounted_total
             discount_obj = dc
-        
+        else:
+            used_coupon = False  # 無折扣碼
         # 3. 通過所有驗證，開始正式建立訂單
         order = CartService._create_order(user_id)
 
@@ -140,9 +141,10 @@ class CartService:
             description=f"Order {order.id} add items: {order_items_str}"
         )
 
-        # 6. consume 折扣碼（正式寫入使用紀錄）
-        if discount_code:
+        # 6. consume 折扣碼(只有實際有用到coupon才要消耗)（正式寫入使用紀錄）
+        if discount_code and used_coupon:
             DiscountService.consume_discount_code(user_id, discount_code)
+        
             # 日誌寫入
             AuditService.log(
                 user_id=user_id,
@@ -163,8 +165,6 @@ class CartService:
         # ==== line_bot 傳送訊息 給以綁定line的user ========
         send_line_notify_order_created(user, order, order_items)
         
-        # ==== 同步 Google Sheet ==== (取消 不實用)
-        #append_order_to_sheet(order, order_items)
 
         return {
             "message": message,

@@ -28,6 +28,11 @@ def create_discount_code():
     # 必填檢查
     if not code or (discount is None and amount is None) or not valid_from or not valid_to:
         return jsonify({"error": "缺少必填欄位"}), 400
+     # 新增前型別檢查
+    if discount is not None and not isinstance(discount, (float, int)):
+        return jsonify({"error": "discount 必須是數字"}), 400
+    if amount is not None and not isinstance(amount, (float, int)):
+        return jsonify({"error": "amount 必須是數字"}), 400
     if discount and amount:
         return jsonify({"error": "discount 與 amount 二擇一"}), 400
 

@@ -17,7 +17,7 @@ function CartList() {
   const [discountInfo, setDiscountInfo] = useState(null);
   const [discountMsg, setDiscountMsg] = useState("");
   const [applyingDiscount, setApplyingDiscount] = useState(false);
-
+  const [discountRuleMsg, setDiscountRuleMsg] = useState(""); // 新增
   const navigate = useNavigate();
 
   // 取得購物車資料
@@ -74,19 +74,28 @@ function CartList() {
       return;
     }
     setDiscountMsg("");
+    setDiscountRuleMsg(""); 
     setApplyingDiscount(true);
     try {
       const res = await api.post(`/carts/${userId}/apply_discount`, { code: discountCode });
-      if (res.data.success) {
+      if (res.data.success&&res.data.used_coupon) {
         setDiscountInfo(res.data);
         setDiscountMsg("折扣碼套用成功！");
-      } else {
+        setDiscountRuleMsg(res.data.rule_msg || ""); // ← 這裡把rule_msg存起來
+      }else if(res.data.success&&!res.data.used_coupon) {
+        setDiscountInfo(null);
+        setDiscountMsg("折扣碼未套用");
+        setDiscountRuleMsg(res.data.rule_msg || ""); 
+      }
+      else {
         setDiscountInfo(null);
         setDiscountMsg(res.data.message || "折扣碼無效");
+        setDiscountRuleMsg(res.data.rule_msg || ""); // ← 失敗時也顯示
       }
     } catch (err) {
       setDiscountInfo(null);
       setDiscountMsg("套用失敗：" + (err.response?.data?.error || err.message));
+      setDiscountRuleMsg(""); // 發生錯誤時不顯示規則
     }
     setApplyingDiscount(false);
   };
@@ -199,6 +208,23 @@ function CartList() {
           {discountMsg}
         </div>
       )}
+      {discountRuleMsg && (
+          <div
+            style={{
+              marginTop: 4,
+              color: "#666",
+              fontSize: 13,
+              maxWidth: 350,
+              whiteSpace: "pre-line",
+              wordBreak: "break-word",
+              lineHeight: 1.7,
+              textAlign: "right", // 跟 discountMsg 靠齊
+              marginLeft: "auto", // 可加，讓它真的貼齊右邊
+            }}
+          >
+            {discountRuleMsg}
+          </div>
+        )}
       {/* 顯示折扣資訊 */}
       {discountInfo && discountInfo.success && (
         <div style={{ marginTop: 8, color: "#fa541c", textAlign: "right" }}>
