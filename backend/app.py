@@ -89,7 +89,4 @@ def create_app(test_config=None):
 if __name__ == '__main__':
 
     app = create_app()
-    #print("注意!!!!!!!!!!!!!!!!!!!!!!!!  DB =", app.config["SQLALCHEMY_DATABASE_URI"])
-    #print("Cloudinary =", os.getenv("CLOUDINARY_CLOUD_NAME"))
-    #print("CLOUDINARY_API_KEY =", os.getenv("CLOUDINARY_API_KEY"))
     app.run(host="0.0.0.0", port=5000, debug=True)

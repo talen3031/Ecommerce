@@ -7,8 +7,11 @@ from app import create_app
 from models import db,User,Category
 from unittest.mock import patch
 
-
-
+@pytest.fixture(autouse=True)
+def patch_async_notify(monkeypatch):
+    monkeypatch.setattr('utils.notify_util.send_email_notify_order_created', lambda *a, **k: None)
+    monkeypatch.setattr('utils.notify_util.send_line_notify_order_created', lambda *a, **k: None)
+    
 @pytest.fixture
 def app():
     db_name = os.environ.get('TEST_DB_NAME', 'Ecommerce_test') 

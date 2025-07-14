@@ -3,7 +3,7 @@ from datetime import datetime
 from exceptions import NotFoundError
 from service.audit_service import AuditService
 from service.discount_service import DiscountService
-from utils.notify_util import async_send_order_notify
+from utils.notify_util import send_email_notify_order_created,send_line_notify_order_created
 
 class CartService:
 
@@ -109,7 +109,7 @@ class CartService:
 
         # 2. 折扣碼驗證（失敗時直接 raise，不建立訂單）
         if discount_code:
-            ok, msg, dc, discounted_total, discount_amount, rule_msg,used_coupon  = DiscountService.apply_discount_code(
+            ok, msg, dc, discounted_total, discount_amount, rule_msg, used_coupon  = DiscountService.apply_discount_code(
                 user_id, cart, discount_code, items_to_checkout
             )
             if not ok:
@@ -160,8 +160,9 @@ class CartService:
         user = User.get_by_user_id(user_id)
     
         # ===== 非同步通知  ======        
-        async_send_order_notify(order=order,user=user, order_items=order_items)
-
+        send_email_notify_order_created(order)
+        send_line_notify_order_created(user, order, order_items)
+    
         return {
             "message": message,
             "order_id": order.id,

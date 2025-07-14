@@ -1,4 +1,4 @@
-from models import db, DiscountCode, UserDiscountCode,Product
+from models import db, DiscountCode, UserDiscountCode
 from datetime import datetime
 
 class DiscountService:
@@ -37,7 +37,7 @@ class DiscountService:
     @staticmethod
     def get_discount_code_by_code(code):
         return DiscountCode.query.filter_by(code=code).first()
-    @staticmethod
+    
     @staticmethod
     def apply_discount_code(user_id, cart, code, items_to_checkout=None):
         """
