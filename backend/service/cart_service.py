@@ -160,7 +160,7 @@ class CartService:
         user = User.get_by_user_id(user_id)
     
         # ===== 非同步通知  ======        
-        async_send_order_notify(user, order, order_items)
+        async_send_order_notify(order=order,user=user, order_items=order_items)
 
         return {
             "message": message,
