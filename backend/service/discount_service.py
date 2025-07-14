@@ -38,6 +38,7 @@ class DiscountService:
     def get_discount_code_by_code(code):
         return DiscountCode.query.filter_by(code=code).first()
     @staticmethod
+    @staticmethod
     def apply_discount_code(user_id, cart, code, items_to_checkout=None):
         """
         檢查折扣碼是否可用，計算折扣後金額，同時回傳優惠規則描述與本次結帳有無實際採用折扣碼

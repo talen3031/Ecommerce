@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Table, Input, Button, Spin, Space, message } from "antd";
 import api from "./api";
 import { useNavigate } from "react-router-dom";
+import './AdminPage.css'
 
 function UserList() {
   const [users, setUsers] = useState([]);
@@ -53,7 +54,7 @@ function UserList() {
   ];
 
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto" }}>
+    <div className="admin-container">
       <h2>會員資訊清單</h2>
       <Space style={{ marginBottom: 16 }}>
         <Input
@@ -66,6 +67,7 @@ function UserList() {
         <Button onClick={handleSearch} type="primary">搜尋</Button>
       </Space>
       <Spin spinning={loading}>
+        <div className="admin-table-scroll">
         <Table
           columns={columns}
           dataSource={users}
@@ -81,7 +83,7 @@ function UserList() {
             onClick: () => handleRowClick(record)
           })}
           style={{ cursor: "pointer" }}
-        />
+        /></div>
       </Spin>
     </div>
   );

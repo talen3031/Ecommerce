@@ -4,6 +4,7 @@ import api from "./api";
 import EditProfile from "./EditProfile";
 import { useNavigate, useLocation } from "react-router-dom";
 
+import './UserProfile.css'
 function UserProfile() {
   const userId = localStorage.getItem("user_id");
   const [user, setUser] = useState(null);
@@ -46,7 +47,7 @@ function UserProfile() {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "40px auto" }}>
+    <div className="form-container">
       <h2>會員個人資訊</h2>
       <Spin spinning={loading}>
         {user ? (

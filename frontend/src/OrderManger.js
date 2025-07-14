@@ -3,6 +3,7 @@ import { Table, Button, Spin, Descriptions, Drawer, Select } from "antd";
 import api from "./api";
 import { message } from "antd";
 import { useNavigate } from "react-router-dom";
+import './AdminPage.css'
 
 const ORDER_STATUS_OPTIONS = [
   { value: "pending", label: "待處理" },
@@ -175,15 +176,16 @@ function AdminOrderList() {
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: "40px auto" }}>
+    <div className="admin-container">
       <h2>後台訂單管理</h2>
       <Spin spinning={loading}>
+        <div className="admin-table-scroll">
         <Table
           columns={columns}
           dataSource={orders}
           rowKey="id"
           pagination={false}
-        />
+        /></div>
       </Spin>
       <Drawer
         title={`訂單明細`}

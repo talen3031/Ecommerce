@@ -1,32 +1,61 @@
+  
 import axios from "axios";
 
 const api = axios.create({
-  //baseURL: "http://127.0.0.1:5000"
   baseURL: process.env.REACT_APP_API_URL,
+  //baseURL: "http://127.0.0.1:5000" // 或用你的 API_URL
 });
 
+// 自動帶 JWT Token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// 只針對 JWT 過期自動登出，帳密錯誤不會 alert
+// 攔截所有回應（成功或失敗都檢查 token 狀態）
 api.interceptors.response.use(
-  response => response,
-  error => {
+  response => {
+    // ===【自動登出攔截】===
+    const reqUrl = response.config && response.config.url;
+    const isAuthApi = reqUrl && (/login|register|signup|forget|reset/i).test(reqUrl);
+
     if (
-      error.response &&
-      error.response.status === 401 &&
+      !isAuthApi &&
+      response.data &&
       (
-        (error.response.data?.error?.toString().toLowerCase().includes("token")) ||
-        (error.response.data?.message?.toString().toLowerCase().includes("token"))
+        (typeof response.data.msg === "string" && response.data.msg.toLowerCase().includes("token")) ||
+        (typeof response.data.message === "string" && response.data.message.toLowerCase().includes("token"))
       )
     ) {
-      localStorage.clear();
-      alert("登入逾時，請重新登入");
-      window.location.href = "/login";
-      return Promise.reject(new Error("登入逾時，請重新登入"));
+      // 只在 msg/message 包含 "expired/invalid/過期/無效/失效" 時才觸發
+      const text = response.data.msg || response.data.message || "";
+      if (/expired|invalid|失效|過期|無效/i.test(text) && localStorage.getItem("token")) {
+        localStorage.clear();
+        window.location.href = "/";
+        return;
+      }
+    }
+    return response;
+  },
+  error => {
+    const reqUrl = error.config && error.config.url;
+    const isAuthApi = reqUrl && (/login|register|signup|forget|reset/i).test(reqUrl);
+
+    if (
+      !isAuthApi &&
+      error.response &&
+      (error.response.status === 401 ||
+        (error.response.data && (
+          (typeof error.response.data.error === "string" && error.response.data.error.toLowerCase().includes("token")) ||
+          (typeof error.response.data.message === "string" && error.response.data.message.toLowerCase().includes("token"))
+        )))
+    ) {
+      if (localStorage.getItem("token")) {
+        localStorage.clear();
+        window.location.href = "/";
+        return;
+      }
     }
     return Promise.reject(error);
   }

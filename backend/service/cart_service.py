@@ -3,7 +3,7 @@ from datetime import datetime
 from exceptions import NotFoundError
 from service.audit_service import AuditService
 from service.discount_service import DiscountService
-from utils.notify_util import send_email_notify_order_created,send_line_notify_order_created
+from utils.notify_util import async_send_order_notify
 
 class CartService:
 
@@ -159,12 +159,8 @@ class CartService:
         order_items = OrderItem.query.filter_by(order_id=order.id).all()
         user = User.get_by_user_id(user_id)
     
-        # ==== 寄信給user ========
-        send_email_notify_order_created(order)
-        
-        # ==== line_bot 傳送訊息 給以綁定line的user ========
-        send_line_notify_order_created(user, order, order_items)
-        
+        # ===== 非同步通知  ======        
+        async_send_order_notify(user, order, order_items)
 
         return {
             "message": message,

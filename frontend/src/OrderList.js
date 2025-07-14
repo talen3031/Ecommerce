@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "./api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Table, Button, Spin, Descriptions, Drawer, message, Modal } from "antd";
+import './OrderList.css'
 
 const ORDER_STATUS_OPTIONS = [
   { value: "pending", label: "待處理" },
@@ -172,16 +173,20 @@ function OrderList() {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto" }}>
+    <div className="orderlist-container">
       <h2>我的訂單</h2>
+      <div className="order-table-scroll">
       <Spin spinning={loading}>
-        <Table
-          columns={columns}
-          dataSource={orders}
-          rowKey="id"
-          pagination={false}
-        />
+        <div className="order-table-scroll">
+          <Table
+            columns={columns}
+            dataSource={orders}
+            rowKey="id"
+            pagination={false}
+          />
+        </div>
       </Spin>
+      </div>
       {/* Drawer 詳情 */}
       <Drawer
         title={`訂單明細`}
@@ -253,6 +258,7 @@ function OrderList() {
           )}
         </Spin>
       </Drawer>
+      
     </div>
   );
 }

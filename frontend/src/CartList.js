@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Table, Button, InputNumber, message, Popconfirm, Spin, Input } from "antd";
+import { Modal, Table, Button, InputNumber, message, Popconfirm, Spin, Input, Skeleton } from "antd";
 import RecommendList from "./RecommendList";
 import api from "./api";
 import { useNavigate } from "react-router-dom";
+import './CartList.css'
 
 function CartList() {
   const userId = localStorage.getItem("user_id");
@@ -174,30 +175,42 @@ function CartList() {
   const handleGoDetail = (id) => navigate(`/products/${id}`);
 
   return (
-    <div style={{ maxWidth: 700, margin: "40px auto" }}>
+    <div className="cart-container">
       <h2>我的購物車</h2>
-      <Spin spinning={loading}>
-        <Table
-          columns={columns}
-          dataSource={cart?.items || []}
-          rowKey="product_id"
-          pagination={false}
-          footer={() => (
-            <div style={{ textAlign: "right" }}>
-              總計：NT$ {total.toFixed(2)}
-            </div>
-          )}
-        />
-      </Spin>
+      <div className="cart-table-scroll">
+        {loading ? (
+              <Skeleton
+                active
+                paragraph={false}
+                title={false}
+                style={{ margin: "24px 0" }}
+              >
+                {/* 假裝有一個空的表格 */}
+                <div style={{ height: 210 }}></div>
+              </Skeleton>
+            ) : (
+              <Table
+                columns={columns}
+                dataSource={cart?.items || []}
+                rowKey="product_id"
+                pagination={false}
+                footer={() => (
+                  <div style={{ textAlign: "right" }}>
+                    總計：NT$ {total.toFixed(2)}
+                  </div>
+                )}
+              />
+            )}
+      </div>
       {/* 折扣碼功能區 */}
-      <div style={{ marginTop: 16, textAlign: "right" }}>
-        <Input
-          placeholder="輸入折扣碼"
-          value={discountCode}
-          style={{ width: 200, marginRight: 8 }}
-          onChange={e => setDiscountCode(e.target.value)}
-          disabled={applyingDiscount}
-        />
+     <div className="cart-discount-area" style={{ marginTop: 16, textAlign: "right" }}>
+      <Input
+        placeholder="輸入折扣碼"
+        value={discountCode}
+        style={{ width: 200, marginRight: 8 }}
+        onChange={e => setDiscountCode(e.target.value)}
+        disabled={applyingDiscount}
+      />
         <Button type="primary" onClick={applyDiscount} loading={applyingDiscount}>
           套用折扣碼
         </Button>

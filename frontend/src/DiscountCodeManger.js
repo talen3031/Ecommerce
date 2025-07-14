@@ -104,19 +104,20 @@ function DiscountCodeAdmin() {
   ];
 
   return (
-    <div style={{ maxWidth: 1000, margin: "40px auto" }}>
+    <div className="admin-container">
       <h2>折扣碼管理</h2>
       <Button type="primary" style={{ marginBottom: 16 }} onClick={() => setAddVisible(true)}>
         新增折扣碼
       </Button>
-      <Table
-        columns={columns}
-        dataSource={codes}
-        rowKey="id"
-        loading={loading}
-        pagination={false}
-      />
-
+      <div className="admin-table-scroll">
+        <Table
+          columns={columns}
+          dataSource={codes}
+          rowKey="id"
+          loading={loading}
+          pagination={false}
+        />
+      </div>
       {/* 新增折扣碼 Modal */}
       <Modal
         title="新增折扣碼"

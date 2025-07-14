@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Form, Input, Button, message, Spin } from "antd";
 import api from "./api";
 import { useNavigate } from "react-router-dom";
-
+import './UserProfile.css'
 function EditProfile() {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
@@ -40,7 +40,7 @@ function EditProfile() {
   }
 
   return (
-    <div style={{ maxWidth: 500, margin: "40px auto" }}>
+    <div className="form-container">
       <h2>更改會員資訊</h2>
       <Form
         form={form}

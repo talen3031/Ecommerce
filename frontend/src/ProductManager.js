@@ -4,6 +4,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import api from "./api";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
+import { ReactSortable } from "react-sortablejs";
+import './AdminPage.css'
 
 const categoryOptions = [
   { label: "全部", value: "" },
@@ -165,7 +167,16 @@ function ProductManager() {
       dataIndex: "images",
       render: (images) =>
         images && images.length > 0 ? (
-          <img src={images[0]} alt="商品圖" width={50} />
+          <img
+            src={images[0]}
+            alt="商品圖"
+            style={{
+              width: 50,
+              height: 50,
+              objectFit: "cover",
+              borderRadius: 6
+            }}
+          />
         ) : (
           <span style={{ color: "#bbb" }}>無圖</span>
         )
@@ -183,11 +194,11 @@ function ProductManager() {
       title: "操作",
       render: (_, record) => (
         <>
-          <Button size="small" onClick={() => openEdit(record)} style={{ marginRight: 8 }}>編輯</Button>
+          <Button size="small" onClick={() => openEdit(record)} style={{ marginRight: 8 ,color: "#808481ff"}}>編輯</Button>
           <Popconfirm title="確定刪除？" onConfirm={() => handleDelete(record.id)}>
-            <Button danger size="small" style={{ marginRight: 8 }}>刪除</Button>
+          <Button danger size="small" style={{ marginRight: 8 }}>刪除</Button>
           </Popconfirm>
-          <Button size="small" type="dashed" onClick={() => openSaleModal(record.id)} style={{ marginRight: 8 }}>新增特價</Button>
+          <Button size="small" type="dashed" onClick={() => openSaleModal(record.id)} style={{ marginRight: 8 ,color: "#9509faff"}}>特價</Button>
           {isActive(record.is_active) ? (
             <Popconfirm title="確定要下架這個商品嗎？" onConfirm={() => handleDeactivate(record.id)}>
               <Button size="small" danger>下架</Button>
@@ -203,12 +214,19 @@ function ProductManager() {
   ];
 
   return (
-    <div>
+    <div className="admin-container">
       <Button type="primary" style={{ marginBottom: 16 }} onClick={() => openEdit(null)}>
         新增商品
       </Button>
-      <Table columns={columns} dataSource={products} rowKey="id" loading={loading} />
-
+      <div className="admin-table-scroll">
+        <Table
+          columns={columns}
+          dataSource={products}
+          rowKey="id"
+          loading={loading}
+          size="small" // <-- 關鍵：密集型管理表格
+        />
+      </div>
       {/* 新增/編輯商品 modal */}
       <Modal
         title={editing ? "編輯商品" : "新增商品"}
@@ -250,10 +268,39 @@ function ProductManager() {
                 onRemove={(file) => {
                   setFileList(prev => prev.filter(f => f.uid !== file.uid));
                 }}
-                showUploadList={{ showPreviewIcon: false }}
+                showUploadList={false}
               >
                 {fileList.length < 5 && <div><PlusOutlined /><div style={{ marginTop: 8 }}>上傳</div></div>}
               </Upload>
+              <ReactSortable
+                tag="div"
+                animation={180}
+                list={fileList}
+                setList={setFileList}
+                style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}
+              >
+                {fileList.map(file => (
+                  <div
+                    key={file.uid}
+                    style={{
+                      width: 92, height: 92, borderRadius: 8, border: "1.5px solid #ccc",
+                      position: "relative", overflow: "hidden", background: "#fafafa", boxShadow: "0 1px 4px #0001"
+                    }}
+                  >
+                    <img
+                      src={file.url}
+                      alt={file.name}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      draggable={false}
+                    />
+                    <Button
+                      danger size="small"
+                      style={{ position: "absolute", top: 3, right: 3, padding: "0 6px", fontSize: 13, borderRadius: 9, zIndex: 2 }}
+                      onClick={() => setFileList(prev => prev.filter(f => f.uid !== file.uid))}
+                    >x</Button>
+                  </div>
+                ))}
+              </ReactSortable>
             </Spin>
           </Form.Item>
 

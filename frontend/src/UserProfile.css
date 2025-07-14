@@ -1,0 +1,26 @@
+.form-container {
+  max-width: 350px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 13px;
+  padding: 38px 28px 28px 28px;
+  box-shadow: 0 3px 18px #0001;
+}
+
+@media (max-width: 600px) {
+  .form-container {
+    max-width: 97vw !important;
+    margin: 16px auto !important;
+    padding: 22px 7px 22px 7px !important;
+    font-size: 15px !important;
+    border-radius: 8px;
+  }
+  .form-container .ant-btn {
+    font-size: 15px;
+    padding: 0 12px;
+    height: 36px;
+  }
+  .form-container .ant-form-item {
+    margin-bottom: 12px;
+  }
+}

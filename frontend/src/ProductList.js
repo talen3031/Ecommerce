@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Spin, Input, Button, InputNumber, Select, Pagination, Drawer } from "antd";
+import { Card, Row, Col, Spin, Input, Button, InputNumber, Select, Pagination } from "antd";
 import RecommendList from "./RecommendList";
 import api from "./api";
 import { useNavigate } from "react-router-dom";
+import './ProductList.css'
+import { Skeleton } from "antd";
 
 const categoryOptions = [
   { label: "全部", value: "" },
@@ -23,7 +25,6 @@ function ProductList() {
   const [maxPrice, setMaxPrice] = useState();
   const [category, setCategory] = useState("");
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
   const fetchProducts = (page = 1, pageSize = 12) => {
@@ -74,52 +75,13 @@ function ProductList() {
 
   return (
     <>
-      {/*  Banner 無按鈕 */}
-      <div
-        style={{
-          width: "100vw",
-          height: 80,
-          background: "#eee",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}
-      >
+      {/* Banner */}
+      <div className="banner-typing">
         <span className="typing-banner">Nerd.com</span>
-        {/* 這段只需在 App 載入一次即可 */}
-        <style>
-          {`
-            .typing-banner {
-              color: #000;
-              font-weight: 900;
-              font-size: 32px;
-              letter-spacing: 2px;
-              font-family: Oswald, 'Noto Sans TC', Arial, sans-serif;
-              user-select: none;
-              border-right: 4px solid #000;
-              white-space: nowrap;
-              overflow: hidden;
-              display: inline-block;
-              animation: typing 2.2s steps(9, end), blink-caret 0.9s step-end infinite;
-              width: 9ch;
-            }
-            @keyframes typing {
-              from { width: 0 }
-              to { width: 8ch }
-            }
-            @keyframes blink-caret {
-              50% { border-color: transparent }
-            }
-          `}
-        </style>
       </div>
 
-
-
-      {/* 假設你有 Drawer (側邊選單) 就維持原本寫法（不會被 Banner 蓋住） */}
-
       {/* 主內容 */}
-      <div style={{ marginTop: 90, maxWidth: 980, marginLeft: "auto", marginRight: "auto", fontFamily: "'Inter', 'Roboto', 'sans-serif'" }}>
+      <div className="product-list-container">
         {/* 搜尋/篩選 */}
         <Row gutter={8} style={{ marginBottom: 18 }}>
           <Col>
@@ -168,34 +130,35 @@ function ProductList() {
           </Col>
         </Row>
 
-        {/* 商品卡片2欄排列 */}
+        {/* 商品卡片 */}
         <Spin spinning={loading}>
+          {loading ? (
+    // 一次產生 8 個骨架
+    <Row gutter={[32, 32]}>
+      {Array.from({ length: 8 }).map((_, idx) => (
+        <Col xs={24} sm={12} md={12} lg={12} key={idx}>
+          <Card className="product-card minimal-card">
+            <Skeleton.Image style={{ width: '100%', height: 180, marginBottom: 12, borderRadius: 10 }} active />
+            <Skeleton active paragraph={{ rows: 2 }} title={false} />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+        ) :(
           <Row gutter={[32, 32]}>
             {products.map(product => (
               <Col xs={24} sm={12} md={12} lg={12} key={product.id}>
                 <Card
+                  className="product-card minimal-card"
                   hoverable
                   onClick={() => handleGoDetail(product.id)}
                   cover={
                     <img
                       src={product.images?.[0]}
                       alt={product.title}
-                      style={{
-                        height: 240, objectFit: "cover", borderRadius: 12,
-                        border: "1px solid #ebebeb", background: "#fff"
-                      }}
                     />
                   }
-                  style={{
-                    borderRadius: 12,
-                    border: "1px solid #ddd",
-                    cursor: "pointer",
-                    minHeight: 350,
-                    background: "#fafbfc",
-                    transition: "all 0.18s cubic-bezier(.22,1,.36,1)",
-                  }}
                   bodyStyle={{ padding: 18 }}
-                  className="minimal-card"
                 >
                   <div style={{
                     fontWeight: 600, fontSize: 19, marginBottom: 6, color: "#1a1a1a"
@@ -222,8 +185,8 @@ function ProductList() {
               <div style={{ color: "#aaa", margin: "40px auto" }}>找不到商品</div>
             )}
           </Row>
+          )}
         </Spin>
-
         <div style={{ textAlign: "center", margin: "32px 0" }}>
           <Pagination
             current={pageInfo.page}
@@ -242,17 +205,6 @@ function ProductList() {
           limit={6}
           onSelectProduct={handleGoDetail}
         />
-
-        {/* 卡片 hover 動畫 */}
-        <style>
-          {`
-          .minimal-card:hover {
-            transform: translateY(-4px) scale(1.018);
-            border: 1.5px solid #333;
-            background: #f2f2f2;
-          }
-          `}
-        </style>
       </div>
     </>
   );

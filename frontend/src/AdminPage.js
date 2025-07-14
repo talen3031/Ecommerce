@@ -5,6 +5,7 @@ import ProductManager from "./ProductManager";
 import OrderManger from "./OrderManger";
 import DiscountCodeManger from "./DiscountCodeManger";
 import { useNavigate } from "react-router-dom";
+import './AdminPage.css'
 
 function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -25,7 +26,7 @@ function AdminPage() {
   if (!isAdmin) return null;
 
   return (
-    <div style={{ maxWidth: 1100, margin: "40px auto" }}>
+    <div className="admin-container">
       <h2>管理者後台</h2>
       <Tabs
         defaultActiveKey="products"
