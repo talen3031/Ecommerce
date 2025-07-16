@@ -162,7 +162,6 @@ class CartService:
         # ===== 非同步通知  ======        
         send_email_notify_order_created(order)
         send_line_notify_order_created(user, order, order_items)
-        async_send_order_notify(order, user, order_items)
         return {
             "message": message,
             "order_id": order.id,
