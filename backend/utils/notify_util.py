@@ -2,7 +2,17 @@ from models import CartItem, Product,User  # 避免循環 import
 from utils.send_email import send_email  # 你自己的寄信工具
 import sys
 from utils.line_bot import push_message
+import threading
 
+def async_send_order_notify(order, user, order_items):
+    def _notify():
+        from app import app  # 必須在 function 內部 import
+        with app.app_context():
+            from utils.notify_util import send_email_notify_order_created, send_line_notify_order_created
+            send_email_notify_order_created(order)
+            send_line_notify_order_created(user, order, order_items)
+    threading.Thread(target=_notify).start()
+    
 def send_email_notify_order_created(order):
     user = order.user
     if user and user.email:

@@ -15,3 +15,9 @@ cloudinary
 gspread 
 google-auth
 line-bot-sdk
+#LangChain + AI
+langchain
+langchain-openai
+langchain-community
+langchain-experimental
+openai

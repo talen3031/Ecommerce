@@ -4,6 +4,7 @@ from service.order_service import OrderService
 from service.audit_service import AuditService
 from api.decorate import admin_required
 from models import Order,User
+from flask import Response
 
 orders_bp = Blueprint('orders', __name__, url_prefix='/orders')
 
@@ -101,7 +102,6 @@ def get_order_detail(order_id):
         description: 找不到訂單
     """
     detail = OrderService.get_order_detail(order_id)
-
     return jsonify(detail)
 
 @orders_bp.route('/all', methods=['GET'])
