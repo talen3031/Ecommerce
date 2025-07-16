@@ -2,7 +2,9 @@ import os
 import requests
 from flask import Blueprint, request, render_template
 from models import db, User  
-from utils.line_bot import push_message
+from utils.line_bot import push_message,push_flex_message
+from linebot.models import FlexSendMessage
+
 import traceback  
 
 
@@ -102,6 +104,7 @@ def line_webhook():
                     "user_id": user_id,
                     "jwt_token": jwt_token
                 }
+
                 try:
                     resp = requests.post(
                         "https://ecommerce-backend-latest-6fr5.onrender.com/langchain/query",
@@ -115,10 +118,16 @@ def line_webhook():
                         import json
                         msg = ""
                         if isinstance(result, dict):
+                            # 商品查詢
+                            if "products" in result:
+                                flex_content = make_products_flex(result["products"])
+                                push_flex_message(line_user_id, flex_content)
+                                # 回文字版
+                                #msg = format_products_for_line(result)
+                                #push_message(line_user_id, msg)
                              # 判斷為訂單查詢
-                            if "orders" in result:
+                            elif "orders" in result:
                                 msg = format_orders_for_line(result["orders"])
-
                             # 判斷為訂單明細（有 order_id 或 total 或 discount_amount）
                             elif "items" in result and ("order_id" in result or "total" in result or "discount_amount" in result):
                                 msg = format_order_detail_for_line(result)
@@ -200,3 +209,78 @@ def format_cart_for_line(cart):
             f"  數量: {item['quantity']}  原價: ${item['orginal_price']}  現價: ${item['price']}"
         )
     return "\n".join(lines)
+def format_products_for_line(response: dict) -> str:
+    """商品查詢結果純文字格式化（for LINE 訊息）"""
+    products = response.get("products", [])
+    if not products:
+        return "查無商品"
+    lines = []
+    for p in products:
+        title = p.get("title", "-")
+        price = p.get("price", "-")
+        sale_price = p.get("sale_price")
+        is_on_sale = p.get("on_sale")
+        desc = p.get("description", "")
+        line = f"【{title}】\n{desc}\n"
+        if is_on_sale and sale_price:
+            line += f"特價: ${sale_price}（原價: ${price}）"
+        else:
+            line += f"售價: ${price}"
+        # 顯示第一張圖片網址
+        images = p.get("images", [])
+        if images:
+            line += f"\n圖片: {images[0]}"
+        lines.append(line)
+        lines.append("------------")
+    msg = "\n".join(lines)
+    msg += f"\n共 {response.get('total', 0)} 件商品"
+    return msg
+
+def make_products_flex(products: list) -> dict:
+    """商品列表產生 LINE Flex Message（carousel）格式"""
+    bubbles = []
+    for p in products[:5]:  # 最多顯示5個
+        title = p.get("title", "-")
+        price = p.get("price", "-")
+        sale_price = p.get("sale_price")
+        is_on_sale = p.get("on_sale")
+        desc = p.get("description", "")
+        image_url = p.get("images", [""])[0] if p.get("images") else ""
+
+        # 標價
+        if is_on_sale and sale_price:
+            price_text = f"特價: ${sale_price}（原價: ${price}）"
+            price_color = "#FF5551"
+        else:
+            price_text = f"售價: ${price}"
+            price_color = "#1DB446"
+
+        bubble = {
+            "type": "bubble",
+            "hero": {
+                "type": "image",
+                "url": image_url,
+                "size": "full",
+                "aspectRatio": "1.51:1",
+                "aspectMode": "fit",
+                "action": {"type": "uri", "uri": image_url} if image_url else None
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {"type": "text", "text": title, "weight": "bold", "size": "md", "wrap": True},
+                    {"type": "text", "text": desc, "size": "sm", "wrap": True, "color": "#666666"},
+                    {"type": "text", "text": price_text, "size": "lg", "color": price_color, "wrap": True},
+                ]
+            }
+        }
+        # 移除空 action（避免部分 sdk 報錯）
+        if not image_url:
+            bubble["hero"].pop("action", None)
+        bubbles.append(bubble)
+    flex_content = {
+        "type": "carousel",
+        "contents": bubbles
+    }
+    return flex_content

@@ -20,7 +20,8 @@ API_DOCS = """
 可呼叫的 API：
 1. 查詢歷史訂單: GET /orders/{user_id}
    可加參數 ?page=1&per_page=10
-2. 查詢訂單明細: GET /orders/order/{order_id}
+2. 查詢訂單明細: GET /orders/order/{order_id}。
+
 3. 查詢購物車: GET /carts/{user_id}
 4. 查詢商品: GET /products?keyword=XXX
 5. 查詢個人資料: GET /users/{user_id}
