@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
-import api from "./api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Table, Button, Spin, Descriptions, Drawer, message, Modal } from "antd";
-import './OrderList.css'
+import '../../styles/OrderList.css'
+
+import api from "../../api/api";
+import OrderDetailDrawer from "./OrderDetailDrawer";
 
 const ORDER_STATUS_OPTIONS = [
   { value: "pending", label: "待處理" },
@@ -57,7 +59,7 @@ function OrderList() {
     if (!userId) return;
     setLoading(true);
     try {
-      const res = await api.get(`/orders/${userId}`);
+      const res = await api.get(`/orders`);
       setOrders(res.data.orders || []);
     } catch (err) {
       // 可自訂錯誤處理
@@ -69,7 +71,7 @@ function OrderList() {
   const fetchOrderDetail = async (orderId) => {
     setDetailLoading(true);
     try {
-      const res = await api.get(`/orders/order/${orderId}`);
+      const res = await api.get(`/orders/${orderId}`);
       setOrderDetail(res.data);
       setDrawerOpen(true);
     } catch (err) {
@@ -94,6 +96,8 @@ function OrderList() {
   }, [drawerOrderId]);
 
   const columns = [
+
+
     { title: "訂單編號", dataIndex: "id" },
     {
       title: "訂單時間",
@@ -173,6 +177,7 @@ function OrderList() {
   }
 
   return (
+   
     <div className="orderlist-container">
       <h2>我的訂單</h2>
       <div className="order-table-scroll">
@@ -188,76 +193,18 @@ function OrderList() {
       </Spin>
       </div>
       {/* Drawer 詳情 */}
-      <Drawer
-        title={`訂單明細`}
-        placement="right"
-        width={600}
+      <OrderDetailDrawer
+        open={drawerOpen}
         onClose={() => {
           setDrawerOpen(false);
           navigate("/orders");
         }}
-        open={drawerOpen}
-      >
-        <Spin spinning={detailLoading}>
-          {orderDetail ? (
-            <div>
-              <Descriptions column={1} bordered>
-                <Descriptions.Item label="訂單編號">{orderDetail.order_id}</Descriptions.Item>
-                <Descriptions.Item label="下單時間">{formatDate(orderDetail.order_date)}</Descriptions.Item>
-                <Descriptions.Item label="訂單狀態">{STATUS_LABEL_MAP[orderDetail.status] || orderDetail.status}</Descriptions.Item>
-                <Descriptions.Item label="訂單金額">NT$ {orderDetail.total}</Descriptions.Item>
-              </Descriptions>
-              <h4 style={{ marginTop: 24 }}>商品清單</h4>
-              <Table
-                dataSource={orderDetail.items || []}
-                rowKey="product_id"
-                pagination={false}
-                size="small"
-                columns={[
-                  { title: "商品名稱", dataIndex: "title" },
-                  {
-                    title: "單價",
-                    render: (_, r) => (
-                      r.sale_price && r.sale_price !== r.price ? (
-                        <>
-                          <span style={{ color: "#fa541c", fontWeight: 600 }}>NT${r.sale_price}</span>
-                          <span style={{ textDecoration: "line-through", color: "#888", marginLeft: 7, fontSize: 13 }}>NT${r.price}</span>
-                        </>
-                      ) : (
-                        <span>NT${r.price}</span>
-                      )
-                    )
-                  },
-                  { title: "數量", dataIndex: "quantity" },
-                  {
-                    title: "小計",
-                    render: (_, r) => {
-                      const subtotal = (r.sale_price && r.sale_price !== r.price ? r.sale_price : r.price) * r.quantity;
-                      return <span>NT${subtotal}</span>;
-                    }
-                  },
-                ]}
-              />
-              {/* 金額總結資訊依折扣條件顯示 */}
-              {renderAmountInfo()}
-              {/* 只有特定狀態才可取消 */}
-              {orderDetail && !["cancelled", "delivered", "refunded", "returned"].includes(orderDetail.status) && (
-                <div style={{ textAlign: "right", marginTop: 24 }}>
-                  <Button
-                    danger
-                    type="primary"
-                    onClick={() => showCancelConfirm(orderDetail.order_id)}
-                  >
-                    取消訂單
-                  </Button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div>無訂單資料</div>
-          )}
-        </Spin>
-      </Drawer>
+        orderDetail={orderDetail}
+        detailLoading={detailLoading}
+        onCancelOrder={handleCancelOrder}
+        showCancelConfirm={showCancelConfirm}
+        calcOriginalTotal={calcOriginalTotal}
+      />
       
     </div>
   );

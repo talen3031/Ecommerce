@@ -1,3 +1,27 @@
+.userprofile_store-btn {
+  background: #020202 !important;
+  color: #fff !important;
+  font-weight: bold;
+  border: none !important;
+}
+.userprofile_store-btn:hover,
+.userprofile_store-btn:focus {
+  background: #FFD900 !important;
+  color: #222 !important;
+}
+
+.userprofile_edit-btn {
+  background: #020202 !important;
+  color: #fff !important;
+  font-weight: bold;
+  border: none !important;
+}
+.userprofile_edit-btn:hover,
+.userprofile_edit-btn:focus {
+  background: #FFD900 !important;
+  color: #222 !important;
+}
+
 .form-container {
   max-width: 350px;
   margin: 40px auto;

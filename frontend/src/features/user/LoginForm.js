@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Form, Input, Button, message } from "antd";
-import api from "./api";
-import { useNavigate } from "react-router-dom";
+import api from "../../api/api";
 
+import { useNavigate } from "react-router-dom";
+import '../../styles/LoginForm.css'
 function LoginForm() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -16,7 +17,6 @@ function LoginForm() {
       localStorage.setItem("role", res.data.role);
       window.location.href = "/";
       message.success("登入成功！");
-      navigate("/");
     } catch (err) {
       message.error("登入失敗：" + (err.response?.data?.error || err.message));
     }
@@ -45,15 +45,21 @@ function LoginForm() {
           <Input.Password />
         </Form.Item>
         <Form.Item>
-          <Button htmlType="submit" type="primary" loading={loading} block>
-            登入
-          </Button>
+         <Button
+          htmlType="submit"
+          type="primary"
+          loading={loading}
+          block
+          className="login-btn"
+        >
+          登入
+        </Button>
         </Form.Item>
         <Form.Item>
-          <Button type="link" block onClick={() => navigate("/register")}>
+          <Button type="link" block className="login-link-btn" onClick={() => navigate("/register")}>
             還沒有帳號？註冊
           </Button>
-          <Button type="link" block onClick={() => navigate("/forget")}>
+          <Button type="link" block className="login-link-btn" onClick={() => navigate("/forget")}>
             忘記密碼
           </Button>
         </Form.Item>

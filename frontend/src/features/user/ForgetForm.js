@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Form, Input, Button, message } from "antd";
-import api from "./api";
+import api from "../../api/api";
+
 import { useNavigate } from "react-router-dom";
 
 function ForgetForm() {
@@ -11,7 +12,7 @@ function ForgetForm() {
     setLoading(true);
     try {
       await api.post("/auth/forgot_password", values); 
-      message.success("已寄送重設密碼信！");
+      message.success("已寄送重設密碼信！若沒有收到，請至垃圾信箱確認。");
       navigate("/login");
     } catch (err) {
       message.error("寄送失敗：" + (err.response?.data?.error || err.message));

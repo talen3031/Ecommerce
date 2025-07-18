@@ -1,6 +1,6 @@
 from models import CartItem, Product,User  # 避免循環 import
 from utils.send_email import send_email  # 你自己的寄信工具
-import sys
+import sys# 確保 print 可以用
 from utils.line_bot import push_message
 import threading
 
@@ -12,44 +12,60 @@ def async_send_order_notify(order, user, order_items):
             send_email_notify_order_created(order)
             send_line_notify_order_created(user, order, order_items)
     threading.Thread(target=_notify).start()
-    
 def send_email_notify_order_created(order):
     user = order.user
     if user and user.email:
         subject = "您在Nerd.com的訂單已成立！"
         items_html = ""
         for item in order.order_items:
-            items_html += f"{item.product.title} x {item.quantity}：{float(item.price):.2f}元<br>"
+            # 取第一張商品圖片
+            img_url = None
+            if item.product.images and len(item.product.images) > 0:
+                img_url = item.product.images[0]
+            # 商品資訊區塊（全部黑色字體，不用超連結）
+            items_html += (
+                "<div style='margin-bottom:16px; color:#111;'>"
+                f"<span style='font-size:16px; color:#111; font-weight:600;'>{item.product.title}</span>"
+                f" x {item.quantity}："
+                + (
+                    f"<img src='{img_url}' alt='商品圖' style='width:60px;height:60px;object-fit:cover;border-radius:8px;vertical-align:middle;margin:8px 0 8px 0;'>"
+                    if img_url else ""
+                )
+                + "</div>"
+            )
 
         # 折扣資訊（只顯示折扣金額）
         discount_lines = []
         if getattr(order, "discount_code_id", None):
             discount_amount = getattr(order, "discount_amount", 0)
-            discount_lines.append(f"折扣金額：{discount_amount:.0f} 元<br>")
+            discount_lines.append(f"<span style='color:#111;'>折扣金額：{discount_amount:.0f} 元</span><br>")
 
         # 組合 email 內容
         html_lines = [
-            f"您好，<br>",
-            f"感謝您的訂購，您的訂單已成功成立！<br>",
-            f"訂單編號：<b>{order.id}</b><br>",
-            f"訂單金額：{float(order.total):.2f} 元<br>",
-            f"訂單日期：{order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else ''}<br>",
+            "<div style='color:#111; font-size:15px;'>",
+            "您好，<br>",
+            "感謝您的訂購，您的訂單已成功成立！<br>",
+            f"訂單編號：<b style='color:#111;'>{order.id}</b><br>",
+            f"訂單金額：<span style='color:#111;'>{float(order.total):.2f} 元</span><br>",
+            f"訂單日期：<span style='color:#111;'>{order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else ''}</span><br>",
         ]
         if discount_lines:
             html_lines.extend(discount_lines)
-        html_lines.append(f"訂購商品：<br>{items_html}<hr>")
+        html_lines.append("訂購商品：<br>")
+        html_lines.append(items_html)
+        html_lines.append("<hr style='margin:20px 0;'>")
         html_lines.append(
             "感謝您的訂購！請匯款至 (700) 03112790016408 後，我們會盡快出貨～<br>若有任何問題，請隨時聯繫客服 0923956156。"
         )
+        html_lines.append("</div>")
 
         html_content = "".join(html_lines)
 
         try:
-            from utils.send_email import send_email
             send_email(user.email, subject, html_content)
             print(f"下單 email 發送成功!: {user.email}", file=sys.stderr)
         except Exception as e:
-            print(f"下單 email 發送失敗: {user.email}, error: {e}")
+            print(f"下單 email 發送失敗: {user.email}, error: {e}", file=sys.stderr)
 
 def send_email_notify_user_order_status(order):
     user = order.user

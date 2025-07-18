@@ -1,0 +1,32 @@
+.login-btn {
+  background: #E0341B !important;
+  color: #fff !important;
+  font-weight: bold;
+  border: none !important;
+  border-radius: 8px;
+  font-size: 1.0rem;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+  transition: all .15s;
+}
+.login-btn:hover,
+.login-btn:focus {
+  background: #FFD900 !important;
+  color: #222 !important;
+}
+
+/* 修改 AntD link button */
+.login-link-btn {
+  color: #E0341B !important;
+  font-weight: bold;
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 0.8rem;
+  padding: 0;
+}
+.login-link-btn:hover,
+.login-link-btn:focus {
+  color: #FFD900 !important;
+  background: none !important;
+  text-decoration: underline;
+}

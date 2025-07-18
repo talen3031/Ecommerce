@@ -5,12 +5,11 @@ from models import db, User
 from utils.line_bot import push_message,push_flex_message
 from linebot.models import FlexSendMessage
 
-import traceback  
 
 
 linemessage_bp = Blueprint('linemessage', __name__, url_prefix='/linemessage')
 
-@linemessage_bp.route("/callback")
+@linemessage_bp.route("/blinding")
 def line_login_callback():
     code = request.args.get('code')
     state = request.args.get('state')
@@ -22,7 +21,7 @@ def line_login_callback():
     payload = {
         'grant_type': 'authorization_code',
         'code': code,
-        'redirect_uri': 'https://ecommerce-backend-latest-6fr5.onrender.com/linemessage/callback',
+        'redirect_uri': 'https://ecommerce-backend-latest-6fr5.onrender.com/linemessage/blinding',
         #'redirect_uri': os.getenv('LINE_LOGIN_CALLBACK_URL'),
         'client_id': os.getenv('LINE_LOGIN_CHANNEL_ID'),
         'client_secret': os.getenv('LINE_LOGIN_CHANNEL_SECRET'),
@@ -239,7 +238,8 @@ def format_products_for_line(response: dict) -> str:
 def make_products_flex(products: list) -> dict:
     """商品列表產生 LINE Flex Message（carousel）格式"""
     bubbles = []
-    for p in products[:5]:  # 最多顯示5個
+    # 最多顯示5個
+    for p in products[:5]:  
         title = p.get("title", "-")
         price = p.get("price", "-")
         sale_price = p.get("sale_price")

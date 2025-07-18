@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Modal, Form, Input, InputNumber, DatePicker, Switch, message, Space, Select } from "antd";
-import api from "./api";
+import api from "../../api/api";
 import dayjs from "dayjs";
 
 function DiscountCodeAdmin() {

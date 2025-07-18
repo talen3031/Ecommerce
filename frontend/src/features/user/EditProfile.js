@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Form, Input, Button, message, Spin } from "antd";
-import api from "./api";
+import api from "../../api/api";
+
 import { useNavigate } from "react-router-dom";
-import './UserProfile.css'
+import '../../styles/UserProfile.css'
 function EditProfile() {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
@@ -68,7 +69,7 @@ function EditProfile() {
             <Input />
         </Form.Item>
         <Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading} style={{ marginRight: 8 }}>儲存</Button>
+          <Button className="userprofile_store-btn" type="primary" htmlType="submit" loading={loading} style={{ marginRight: 8 }}>儲存</Button>
           <Button onClick={() => navigate("/profile")}>取消</Button>
         </Form.Item>
       </Form>

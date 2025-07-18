@@ -3,6 +3,7 @@ from datetime import datetime
 from exceptions import NotFoundError
 from service.audit_service import AuditService
 from service.discount_service import DiscountService
+from service.order_service import OrderService
 from utils.notify_util import send_email_notify_order_created,send_line_notify_order_created
 
 class CartService:
@@ -28,7 +29,8 @@ class CartService:
                 "title": item.product.title if item.product else None,
                 "price":final_price,
                 "orginal_price": float(item.product.price) if product and product.price else 0.0,
-                "quantity": item.quantity
+                "quantity": item.quantity,
+                "images": product.images
             })
         res = cart.to_dict() 
         res["items"] = items
@@ -92,7 +94,7 @@ class CartService:
         return cart_item,old_qty
 
     @staticmethod
-    def checkout_cart(user_id, items_to_checkout, discount_code=None):
+    def checkout_cart(user_id, items_to_checkout, discount_code=None, shipping_info=None):
         if not items_to_checkout or not isinstance(items_to_checkout, list):
             raise ValueError("Must provide items to checkout")
 
@@ -119,19 +121,29 @@ class CartService:
         else:
             used_coupon = False  # 無折扣碼
         # 3. 通過所有驗證，開始正式建立訂單
-        order = CartService._create_order(user_id)
+        order = OrderService._create_order(user_id)
 
         # 4. 寫入訂單商品（這時才寫入 DB）
         CartService._caculate_items_to_checkout(items_to_checkout, order, user_id, cart)
-     
+
 
         # 5. 寫入訂單金額與折扣碼資訊
         order.total = total
         order.discount_code_id = discount_obj.id if discount_obj else None
         order.discount_amount = float(discount_amount) if discount_obj else None
+        
+        # 6 新增：寫入 shipping info
+        if shipping_info:
+            OrderService.set_shipping_info(
+                order.id,
+                shipping_info.get("shipping_method",None),
+                shipping_info.get("recipient_name",None),
+                shipping_info.get("recipient_phone",None),
+                shipping_info.get("store_name",None),
+                user_id
+            )
 
-
-        #日誌寫入（包含所有商品資料）
+        #order 日誌寫入（包含所有商品資料）(shipping info 已在set_shipping_info 寫入)
         order_items_str = ", ".join([f"{item['product_id']} x {item['quantity']}" for item in items_to_checkout])
         AuditService.log(
             user_id=user_id,
@@ -141,7 +153,7 @@ class CartService:
             description=f"Order {order.id} add items: {order_items_str}"
         )
 
-        # 6. consume 折扣碼(只有實際有用到coupon才要消耗)（正式寫入使用紀錄）
+        # 7. consume 折扣碼(只有實際有用到coupon才要消耗)（正式寫入使用紀錄）
         if discount_code and used_coupon:
             DiscountService.consume_discount_code(user_id, discount_code)
         
@@ -158,7 +170,7 @@ class CartService:
         db.session.commit()
         order_items = OrderItem.query.filter_by(order_id=order.id).all()
         user = User.get_by_user_id(user_id)
-    
+        
         # ===== 非同步通知  ======        
         send_email_notify_order_created(order)
         send_line_notify_order_created(user, order, order_items)
@@ -186,17 +198,6 @@ class CartService:
             if not cart_item or quantity > cart_item.quantity:
                 raise ValueError(f"Product {product_id} quantity not enough in cart")
 
-    @staticmethod
-    def _create_order(user_id):
-        order = Order(user_id=user_id, order_date=datetime.now(), total=0, status='pending')
-        db.session.add(order)
-        db.session.flush()  # 先獲得 order.id
-        return order
-
-    @staticmethod
-    def _add_order_item(order_id, product_id, quantity, price):
-        order_item = OrderItem(order_id=order_id, product_id=product_id, quantity=quantity, price=price)
-        db.session.add(order_item)
 
     @staticmethod
     def _handle_cart_item_on_checkout(user_id, cart, product_id, quantity):
@@ -247,7 +248,7 @@ class CartService:
             total += price * quantity
             if order:
                 #add  order item
-                CartService._add_order_item(order.id, product_id, quantity, price)
+                OrderService._add_order_item(order.id, product_id, quantity, price)
                 # handle rest of cart_item
                 CartService._handle_cart_item_on_checkout(user_id, cart, product_id, quantity)
         print("_caculate_items_to_checkout .....total=",total)

@@ -20,12 +20,11 @@
 - flasgger
 - pytest
 - PostgreSQL
-- sendgrid
 - dotenv
 - cloudinary
-- gspread 
 - google-auth
 - line-bot-sdk
+- resend
 ---
 
 ## 系統架構特色

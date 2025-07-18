@@ -1,0 +1,17 @@
+.addtocart-btn {
+  background: #0c0c0c !important;
+  color: #fff !important;
+  font-weight: bold;
+  border: none !important;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+  height: 48px !important;
+  width: 100% !important;
+  transition: all .15s;
+}
+.addtocart-btn:hover,
+.addtocart-btn:focus {
+  background: #FFD900 !important;
+  color: #222 !important;
+}

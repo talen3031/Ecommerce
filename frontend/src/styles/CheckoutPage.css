@@ -1,0 +1,69 @@
+.dicount-btn {
+  background: #ffe100 !important;
+  color: #222  !important;
+  font-weight: bold;
+  border: none !important;
+  border-radius: 15px;
+  font-size: 10px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+  height: 40px !important;
+  width: 72px !important;
+  transition: all .15s;
+  letter-spacing: 1px;
+}
+.dicount-btn:hover,
+.dicount-btn:focus {
+  background: #ffe100 !important;
+  color: #fffcfc !important;
+}
+
+.final_checkout-btn {
+  background: #020202 !important;
+  color: #fff !important;
+  font-weight: bold;
+  border: none !important;
+  border-radius: 12px;
+  font-size: 16px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+  height: 50px !important;
+  width: 96px !important;
+  transition: all .15s;
+  letter-spacing: 1px;
+}
+
+.send_order-btn {
+  background: #020202 !important;
+  color: #fff !important;
+  font-weight: bold;
+  border: none !important;
+  border-radius: 10px;
+  font-size: 15px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+  height: 34px !important;
+  width: 86px !important;
+  transition: all .15s;
+  letter-spacing: 1px;
+}
+.send_order-btn:hover,
+.send_order-btn:focus {
+  background: #FFD900 !important;
+  color: #222 !important;
+}
+
+.cancel-btn {
+  background: #E0341B !important;
+  color: #fff !important;
+  font-weight: bold;
+  border: none !important;
+  border-radius: 10px;
+  font-size: 15px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+  height: 34px !important;
+  width: 86px !important;
+  transition: all .15s;
+  letter-spacing: 1px;
+}
+.cancel-btn:hover, .cancel-btn:focus {
+  background: #c22113 !important;
+  color: #fff !important;
+}

@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Descriptions, Spin, message, Button, Tag } from "antd";
-import api from "./api";
+import api from "../../api/api";
 import EditProfile from "./EditProfile";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import './UserProfile.css'
+import '../../styles/UserProfile.css'
+
 function UserProfile() {
   const userId = localStorage.getItem("user_id");
   const [user, setUser] = useState(null);
@@ -12,7 +13,7 @@ function UserProfile() {
 
   const LINE_CHANNEL_ID = "2007730728";
   const STATE = userId;
-  const REDIRECT_URI = encodeURIComponent("https://ecommerce-backend-latest-6fr5.onrender.com/linemessage/callback");
+  const REDIRECT_URI = encodeURIComponent("https://ecommerce-backend-latest-6fr5.onrender.com/linemessage/blinding");
   const lineLoginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${REDIRECT_URI}&scope=openid%20profile&state=${STATE}`;
   const navigate = useNavigate();
   const location = useLocation();
@@ -85,7 +86,7 @@ function UserProfile() {
                 <Descriptions.Item label="LINE 暱稱">{user.line_display_name}</Descriptions.Item>}
             </Descriptions>
             <div style={{ marginTop: 24, textAlign: "right" }}>
-              <Button type="primary" onClick={() => navigate("/profile/edit")} style={{ marginRight: 10 }}>
+              <Button className="userprofile_edit-btn" type="primary" onClick={() => navigate("/profile/edit")}>
                 更改會員資訊
               </Button>
               {user.line_user_id ? (

@@ -417,7 +417,7 @@ def checkout_cart(user_id):
     data = request.json or {}
     items_to_checkout = data.get("items")
     discount_code = data.get("discount_code")
-
+    shipping_info = data.get("shipping_info")
     # 若傳入'all' or 'ALL'
     if isinstance(items_to_checkout, str) and items_to_checkout.lower() == "all":
         cart = CartService.get_cart(user_id=user_id)
@@ -438,7 +438,7 @@ def checkout_cart(user_id):
         return jsonify({"error": "Cart is empty"}), 400
 
     # 執行結帳
-    result = CartService.checkout_cart(user_id=user_id, items_to_checkout=items_to_checkout,discount_code=discount_code)
+    result = CartService.checkout_cart(user_id=user_id, items_to_checkout=items_to_checkout,discount_code=discount_code ,shipping_info=shipping_info)
     
     # 日誌寫入
     AuditService.log(

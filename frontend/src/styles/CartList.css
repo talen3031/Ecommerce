@@ -1,8 +1,27 @@
+.checkout-btn {
+  background: #020202 !important;
+  color: #fff !important;
+  font-weight: bold;
+  border: none !important;
+  border-radius: 12px;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
+  height: 48px !important;
+  width: 10% !important;
+  transition: all .15s;
+  letter-spacing: 1px;
+}
+.checkout-btn:hover,
+.checkout-btn:focus {
+  background: #FFD900 !important;
+  color: #222 !important;
+}
 .cart-container {
-  max-width: 700px;
+  max-width: 1280px;
   margin: 40px auto;
   padding: 0 8px;
 }
+
 
 @media (max-width: 900px) {
   .cart-container {

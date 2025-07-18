@@ -1,20 +1,28 @@
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import LoginForm from "./LoginForm";
-import RegisterForm from "./RegisterForm";
-import ForgetForm from "./ForgetForm";
-import ProductList from "./ProductList";
-import ProductDetail from "./ProductDetail";
-import CartList from "./CartList";
-import OrderList from "./OrderList";
-import UserProfile from "./UserProfile";
-import AdminPage from "./AdminPage";
-import EditProfile from "./EditProfile";
-import SidebarDrawer from "./SidebarDrawer";
-import LoginButton from "./LoginButton";
-import UserDetail from "./UserDetail"; 
-import ResetPassword from "./ResetPassword"; 
+
+import ProductList from "./features/products/ProductList";
+import ProductDetail from "./features/products/ProductDetail";
+import CartList from "./features/carts/CartList";
+import OrderList from "./features/orders/OrderList";
+
+import UserProfile from "./features/user/UserProfile";
+import EditProfile from "./features/user/EditProfile";
+import LoginForm from "./features/user/LoginForm";
+import RegisterForm from "./features/user/RegisterForm";
+import ForgetForm from "./features/user/ForgetForm";
+import UserDetail from "./features/user/UserDetail"; 
+import ResetPassword from "./features/user/ResetPassword"; 
+
+import AdminPage from "./features/admin/AdminPage";
+import SidebarDrawer from "./features/sidebar/SidebarDrawer";
+
+
+import CheckoutPage from "./features/carts/CheckoutPage";
+import LoginButton from "./components/LoginButton";
+import HeroBanner from './components/HeroBanner';
+
 
 import 'antd/dist/reset.css';
 
@@ -32,6 +40,8 @@ function App() {
 
       {/* 主內容往右偏移（空出 Sidebar 空間），未登入時 marginLeft 設0 */}
       <div >
+         <HeroBanner />
+        {/* 這裡接下來才是 Router 的內容 */}
         <Routes>
           <Route path="/" element={<ProductListWrapper />} />
           <Route path="/products" element={<ProductListWrapper />} />
@@ -40,11 +50,12 @@ function App() {
           <Route path="/login" element={<LoginForm />} />
           <Route path="/register" element={<RegisterForm />} />
           <Route path="/forget" element={<ForgetForm />} />
+          <Route path="/reset_password" element={<ResetPassword />} />
 
           <Route path="/cart" element={loggedIn ? <CartList /> : <Navigate to="/login" />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/orders" element={loggedIn ? <OrderList /> : <Navigate to="/login" />} />
           <Route path="/orders/:orderId" element={loggedIn ? <OrderList /> : <Navigate to="/login" />} />
-
           <Route path="/profile" element={loggedIn ? <UserProfile /> : <Navigate to="/login" />} />
           <Route path="/profile/edit" element={loggedIn ? <EditProfile /> : <Navigate to="/login" />} />
           <Route path="/admin/users/:id" element={<UserDetail />} />

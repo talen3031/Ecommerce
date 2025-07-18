@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Card, Spin, message, Row, Col } from "antd";
-import api from "./api";
+import api from "../api/api";
 import { useNavigate } from "react-router-dom";
 
 function RecommendList({ userId, mode = "cart", limit = 5, onSelectProduct }) {

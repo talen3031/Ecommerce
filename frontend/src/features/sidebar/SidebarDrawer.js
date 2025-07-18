@@ -11,16 +11,23 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import api from "../../api/api";
 
 function SidebarDrawer({ loggedIn, role }) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout", {}, { withCredentials: true });
+    } catch (e) {
+      // 可以忽略錯誤（無論如何都清除本地端）
+    }
     localStorage.clear();
-    navigate("/login");
+    navigate("/");
     window.location.reload();
   };
+
 
   if (!loggedIn) return null;
 
@@ -55,7 +62,7 @@ function SidebarDrawer({ loggedIn, role }) {
             商品列表
           </Menu.Item>
           <Menu.Item key="cart" icon={<ShoppingCartOutlined />} onClick={() => navigate("/cart")}>
-            購物車清單
+            購物車
           </Menu.Item>
           <Menu.Item key="orders" icon={<OrderedListOutlined />} onClick={() => navigate("/orders")}>
             訂單查詢

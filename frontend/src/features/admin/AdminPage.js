@@ -5,7 +5,7 @@ import ProductManager from "./ProductManager";
 import OrderManger from "./OrderManger";
 import DiscountCodeManger from "./DiscountCodeManger";
 import { useNavigate } from "react-router-dom";
-import './AdminPage.css'
+import '../../styles/AdminPage.css'
 
 function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Popconfirm, message, Modal, Form, Input, InputNumber, Select, DatePicker, Upload, Spin } from "antd";
 import { PlusOutlined } from '@ant-design/icons';
-import api from "./api";
+import api from "../../api/api";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 import { ReactSortable } from "react-sortablejs";
-import './AdminPage.css'
+import '../../styles/AdminPage.css'
 
 const categoryOptions = [
   { label: "全部", value: "" },

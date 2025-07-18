@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Spin, Descriptions, Drawer, Select } from "antd";
-import api from "./api";
-import { message } from "antd";
+import { Table, Button, Spin, Descriptions, Drawer, Select, Modal, Form, Input, message } from "antd";
+import api from "../../api/api";
 import { useNavigate } from "react-router-dom";
-import './AdminPage.css'
+import '../../styles/AdminPage.css'
 
 const ORDER_STATUS_OPTIONS = [
   { value: "pending", label: "待處理" },
@@ -17,13 +16,18 @@ const ORDER_STATUS_OPTIONS = [
 ];
 
 function AdminOrderList() {
+  const [previewImage, setPreviewImage] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [orderDetail, setOrderDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [statusEditing, setStatusEditing] = useState({});
+  const [shippingModalOpen, setShippingModalOpen] = useState(false);
+  const [shippingForm] = Form.useForm();
   const navigate = useNavigate();
+  const STATUS_LABEL_MAP = Object.fromEntries(ORDER_STATUS_OPTIONS.map(opt => [opt.value, opt.label]));
 
   // 計算原始金額
   const calcOriginalTotal = (items) => {
@@ -51,7 +55,7 @@ function AdminOrderList() {
   const fetchOrderDetail = async (orderId) => {
     setDetailLoading(true);
     try {
-      const res = await api.get(`/orders/order/${orderId}`);
+      const res = await api.get(`/orders/${orderId}`);
       setOrderDetail(res.data);
       setDrawerVisible(true);
     } catch (err) {
@@ -76,7 +80,21 @@ function AdminOrderList() {
     }
   };
 
+  // 更改運送資訊
+  const handleUpdateShipping = async () => {
+    try {
+      const values = await shippingForm.validateFields();
+      await api.patch(`/orders/${orderDetail.order_id}/shipping`, values);
+      message.success("運送資訊更新成功");
+      setShippingModalOpen(false);
+      fetchOrderDetail(orderDetail.order_id); // 重新載入明細
+    } catch (err) {
+      message.error("更新失敗：" + (err.response?.data?.error || err.message));
+    }
+  };
+
   const columns = [
+
     { title: "訂單編號", dataIndex: "id" },
     { title: "用戶ID", dataIndex: "user_id" },
     {
@@ -180,12 +198,13 @@ function AdminOrderList() {
       <h2>後台訂單管理</h2>
       <Spin spinning={loading}>
         <div className="admin-table-scroll">
-        <Table
-          columns={columns}
-          dataSource={orders}
-          rowKey="id"
-          pagination={false}
-        /></div>
+          <Table
+            columns={columns}
+            dataSource={orders}
+            rowKey="id"
+            pagination={false}
+          />
+        </div>
       </Spin>
       <Drawer
         title={`訂單明細`}
@@ -201,9 +220,18 @@ function AdminOrderList() {
                 <Descriptions.Item label="訂單編號">{orderDetail.order_id}</Descriptions.Item>
                 <Descriptions.Item label="用戶ID">{orderDetail.user_id}</Descriptions.Item>
                 <Descriptions.Item label="下單時間">{formatDate(orderDetail.order_date)}</Descriptions.Item>
-                <Descriptions.Item label="訂單狀態">{orderDetail.status}</Descriptions.Item>
+                <Descriptions.Item label="訂單狀態">
+                  <span style={{
+                    color: orderDetail.status === "cancelled" ? "#f5222d" : "#222",
+                    fontWeight: orderDetail.status === "cancelled" ? 600 : 400
+                  }}>
+                    {STATUS_LABEL_MAP[orderDetail.status] || orderDetail.status}
+                  </span>
+                </Descriptions.Item>
                 <Descriptions.Item label="訂單金額">NT$ {orderDetail.total}</Descriptions.Item>
+         
               </Descriptions>
+              
               <h4 style={{ marginTop: 24 }}>商品清單</h4>
               <Table
                 dataSource={orderDetail.items || []}
@@ -211,6 +239,24 @@ function AdminOrderList() {
                 pagination={false}
                 size="small"
                 columns={[
+                {
+                  title: "圖片",
+                  dataIndex: "images",
+                  render: (images, record) =>
+                    images && images.length > 0 ? (
+                      <img
+                        src={images[0]}
+                        alt={record.title}
+                        style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 6, cursor: "zoom-in" }}
+                        onClick={() => {
+                          setPreviewImage(images[0]);
+                          setPreviewOpen(true);
+                        }}
+                      />
+                    ) : (
+                      <span style={{ color: "#bbb" }}>無圖</span>
+                    )
+                  },
                   { title: "商品名稱", dataIndex: "title" },
                   {
                     title: "單價",
@@ -235,14 +281,99 @@ function AdminOrderList() {
                   },
                 ]}
               />
+               {/* 寄送資訊 */}
+                {orderDetail && orderDetail.shipping_info && (
+                  <div style={{ margin: "24px 0 0 0" }}>
+                    <h4>寄送資訊</h4>
+                    <Descriptions column={1} bordered size="small" style={{ maxWidth: 390 }}>
+                      <Descriptions.Item label="寄送方式">{orderDetail.shipping_info.shipping_method}</Descriptions.Item>
+                      <Descriptions.Item label="收件人">{orderDetail.shipping_info.recipient_name}</Descriptions.Item>
+                      <Descriptions.Item label="收件人電話">{orderDetail.shipping_info.recipient_phone}</Descriptions.Item>
+                      <Descriptions.Item label="門市/地址">{orderDetail.shipping_info.store_name}</Descriptions.Item>
+                      {/* 只有未取消才能更改 */}
+                      {orderDetail.status !== "cancelled" && (
+                        <Descriptions.Item label="運送資訊">
+                          <Button danger onClick={() => {
+                            shippingForm.setFieldsValue(orderDetail.shipping_info || {});
+                            setShippingModalOpen(true);
+                          }}>
+                            更改
+                          </Button>
+                        </Descriptions.Item>
+                      )}
+                    </Descriptions>
+                    <Modal
+                      title="運送資訊"
+                      open={shippingModalOpen}
+                      onCancel={() => setShippingModalOpen(false)}
+                      onOk={handleUpdateShipping}
+                      okText="儲存"
+                      cancelText="取消"
+                    >
+                      <Form form={shippingForm} layout="vertical">
+                      <Form.Item
+                          label="寄送方式"
+                          name="shipping_method"
+                          rules={[{ required: true, message: "請選擇寄送方式" }]}
+                        >
+                          <Select>
+                            <Select.Option value="711">711 超商取貨</Select.Option>
+                            <Select.Option value="FamilyMart">全家超商取貨</Select.Option>
+                          </Select>
+                        </Form.Item>
+                        <Form.Item
+                          label="收件人姓名"
+                          name="recipient_name"
+                          rules={[{ required: true, message: "請輸入收件人姓名" }]}
+                        >
+                          <Input />
+                        </Form.Item>
+                        <Form.Item
+                          label="收件人電話"
+                          name="recipient_phone"
+                          rules={[
+                            { required: true, message: "請輸入收件人電話" },
+                            { pattern: /^09\d{8}$/, message: "請輸入正確的手機號碼格式（09開頭共10碼）" }
+                          ]}
+                        >
+                          <Input />
+                        </Form.Item>
+                        <Form.Item
+                          label="取貨門市/地址"
+                          name="store_name"
+                          rules={[
+                            { required: true, message: "請輸入收件人電話" }
+                          ]}
+                        >
+                          <Input />
+                        </Form.Item>
+                      </Form>
+                    </Modal>
+                  </div>
+                )}
               {/* 金額總結資訊依折扣條件顯示 */}
               {renderAmountInfo()}
+              
             </div>
           ) : (
             <div>無訂單資料</div>
           )}
         </Spin>
       </Drawer>
+      <Modal
+        open={previewOpen}
+        footer={null}
+        onCancel={() => setPreviewOpen(false)}
+        bodyStyle={{ textAlign: "center" }}
+      >
+        {previewImage && (
+          <img
+            src={previewImage}
+            alt="放大圖"
+            style={{ maxWidth: "92vw", maxHeight: "78vh", borderRadius: 12 }}
+          />
+        )}
+      </Modal>
     </div>
   );
 }

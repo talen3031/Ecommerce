@@ -1,8 +1,9 @@
 from models import db, User,PasswordResetToken
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token,create_refresh_token
 from exceptions import DuplicateError, UnauthorizedError,NotFoundError
 import secrets
+
 from datetime import datetime, timedelta
 from utils.send_email import send_email
 
@@ -28,6 +29,7 @@ class UserService:
         db.session.commit()
         return user
     
+   
     @staticmethod
     def login(email, password):
         user = User.query.filter_by(email=email).first()
@@ -35,9 +37,16 @@ class UserService:
             raise UnauthorizedError('Invalid email or password')
         access_token = create_access_token(
             identity=str(user.id),
-            additional_claims={"role": user.role}
+            additional_claims={"user_id": user.id,
+                                "role": user.role}
         )
-        return {"access_token": access_token, "user_id": user.id, "role": user.role}
+        refresh_token = create_refresh_token(identity=str(user.id))
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "user_id": user.id,
+            "role": user.role
+        }
     @staticmethod
     def send_reset_link(user_id):
           # 產生安全亂數 token
@@ -54,13 +63,19 @@ class UserService:
         db.session.add(reset_token)
         db.session.commit()
         # 發送重設信
-        reset_link = f"https://ecommerce-frontend-latest.onrender.com/login/reset_password?token={token}"
+        #reset_link = f"http://localhost:3000/reset_password?token={token}"
+        reset_link = f"https://ecommerce-backend-latest-6fr5.onrender.com?token={token}"
         user = User.get_by_user_id(user_id)
         
         if user and user.email:
             subject = "【Nerd.com】密碼重設連結"
             content = f"請點擊以下連結重設密碼：<br><a href='{reset_link}'>{reset_link}</a>"
-            send_email(user.email, subject, content)
+            try:
+                send_email(user.email, subject, content)
+            except Exception as e:
+                print("寄信失敗", e)
+                import traceback; traceback.print_exc()
+            print("重設密碼 寄信成功 reset_link:",reset_link)
 
         return reset_link
 

@@ -8,23 +8,18 @@ from flask import Response
 
 orders_bp = Blueprint('orders', __name__, url_prefix='/orders')
 
-# 查詢我的歷史訂單
-@orders_bp.route('/<int:user_id>', methods=['GET'])
+# 查詢自己歷史訂單
+@orders_bp.route('', methods=['GET'])
 @jwt_required()
-def get_orders(user_id):
+def get_my_orders():
     """
-    查詢用戶歷史訂單（分頁）
+    查詢目前登入者自己的歷史訂單（分頁）
     ---
     tags:
       - Orders
     security:
       - Bearer: []
     parameters:
-      - name: user_id
-        in: path
-        type: integer
-        required: true
-        description: 用戶ID
       - name: page
         in: query
         type: integer
@@ -55,16 +50,11 @@ def get_orders(user_id):
               type: integer
             pages:
               type: integer
-      403:
-        description: 權限不足
     """
-    current_user = get_jwt_identity()
-    if int(current_user) != user_id:
-        return jsonify({"error": "Permission denied"}), 403
-    
+    current_user_id = int(get_jwt_identity())
     page = request.args.get('page', default=1, type=int)
     per_page = request.args.get('per_page', default=10, type=int)
-    orders_page = OrderService.get_user_orders(user_id, page=page, per_page=per_page)
+    orders_page = OrderService.get_user_orders(current_user_id, page=page, per_page=per_page)
 
     result = [order.to_dict() for order in orders_page.items]
     return jsonify({
@@ -77,7 +67,7 @@ def get_orders(user_id):
 
 
 # 查詢訂單明細
-@orders_bp.route('/order/<int:order_id>', methods=['GET'])
+@orders_bp.route('/<int:order_id>', methods=['GET'])
 @jwt_required()
 def get_order_detail(order_id):
     """
@@ -273,3 +263,138 @@ def update_order_status(order_id):
     )
 
     return jsonify({"message": f"Order status updated to {status}"})
+
+#admin only
+@orders_bp.route('/<int:order_id>/shipping', methods=['PATCH'])
+@admin_required
+def update_shipping_info(order_id):
+    """
+    更新訂單寄送資訊（管理員專用）
+    ---
+    tags:
+      - Orders
+    summary: 部分更新訂單寄送資訊（admin）
+    security:
+      - Bearer: []
+    parameters:
+      - name: order_id
+        in: path
+        type: integer
+        required: true
+        description: 訂單ID
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          properties:
+            shipping_method:
+              type: string
+              example: "711"
+              description: 配送方式 ('711', 'familymart' 等)
+            recipient_name:
+              type: string
+              example: "王小明"
+            recipient_phone:
+              type: string
+              example: "0912345678"
+            store_name:
+              type: string
+              example: "台北松江南京門市"
+    responses:
+      200:
+        description: 更新成功
+        schema:
+          type: object
+          properties:
+            id:
+              type: integer
+            order_id:
+              type: integer
+            shipping_method:
+              type: string
+            recipient_name:
+              type: string
+            recipient_phone:
+              type: string
+            store_name:
+              type: string
+      400:
+        description: 沒有提供任何可更新欄位
+        schema:
+          properties:
+            error:
+              type: string
+      403:
+        description: 權限不足或狀態不可改
+        schema:
+          properties:
+            error:
+              type: string
+      404:
+        description: 找不到訂單或寄送資訊
+        schema:
+          properties:
+            error:
+              type: string
+    """
+    order = Order.get_by_order_id(order_id=order_id)
+    if not order:
+        return jsonify({"error": "Order not found"}), 404
+
+    data = request.json or {}
+
+    # 至少要有一個欄位才 patch
+    updatable_fields = ['shipping_method', 'recipient_name', 'recipient_phone', 'store_name']
+    if not any(data.get(field) for field in updatable_fields):
+        return jsonify({"error": "請至少傳一個可更新欄位"}), 400
+
+    shipping_data={}
+    for field in updatable_fields:
+        if data.get(field):
+            shipping_data[field]=data.get(field) 
+    # 建議：user id 也帶給 Service 做審計
+    admin_user_id = int(get_jwt_identity())
+    shipping = OrderService.update_shipping_info(order_id, shipping_data,admin_user_id)
+
+    return jsonify(shipping.to_dict()), 200
+
+#=============不讓人呼叫 目前只在 CartService.checkout 中實現 =======================
+# @orders_bp.route('/<int:order_id>/shipping', methods=['POST'])
+# @jwt_required()
+# def set_shipping_info(order_id):
+#     current_user_id = int(get_jwt_identity())
+#     user = User.get_by_user_id(current_user_id)
+#     order = Order.get_by_order_id(order_id=order_id)
+
+#     if not order:
+#         return jsonify({"error": "Order not found"}), 404
+#     if user.role != "admin" and order.user_id != current_user_id:
+#         return jsonify({"error": "Permission denied"}), 403
+
+#     data = request.json or {}
+#     shipping_method = data.get("shipping_method")
+#     recipient_name = data.get("recipient_name")
+#     recipient_phone = data.get("recipient_phone")
+#     store_name = data.get("store_name")
+
+#     missing = []
+#     if not shipping_method:
+#         missing.append("shipping_method")
+#     if not recipient_name:
+#         missing.append("recipient_name")
+#     if not recipient_phone:
+#         missing.append("recipient_phone")
+#     if not store_name:
+#         missing.append("store_name")
+#     if missing:
+#         return jsonify({"error": f"缺少欄位: {', '.join(missing)}"}), 400
+    
+#     shipping = OrderService.set_shipping_info(order_id=order_id, 
+#                                               shipping_method=shipping_method,
+#                                               recipient_name=recipient_name,
+#                                               recipient_phone=recipient_phone,
+#                                               store_name=store_name,  
+#                                               operator_user_id=user.id)
+
+#     return jsonify(shipping.to_dict()), 201

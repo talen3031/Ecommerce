@@ -156,10 +156,10 @@ class Order(db.Model):
     discount_code_id = db.Column(db.Integer, db.ForeignKey('discount_codes.id'), nullable=True)
     discount_amount = db.Column(db.Numeric, nullable=True)  # 折扣金額，無折扣則為 NULL
     user = db.relationship('User', backref=db.backref('orders', lazy=True))
-
+    
     @classmethod
     def get_by_order_id(cls, order_id):
-        return cls.query.filter_by(order_id=order_id).first()
+        return cls.query.filter_by(id=order_id).first()
    
     #查詢某用戶所有訂單（依日期排序）
     @classmethod
@@ -370,3 +370,24 @@ class UserDiscountCode(db.Model):
 
     user = db.relationship('User', backref=db.backref('used_discount_codes', lazy=True))
     discount_code = db.relationship('DiscountCode', backref=db.backref('user_usages', lazy=True))
+    
+class OrderShipping(db.Model):
+    __tablename__ = 'order_shipping'
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False, unique=True)
+    shipping_method = db.Column(db.String(30), nullable=False)     # '711', 'familymart'
+    recipient_name = db.Column(db.String(100), nullable=False)
+    recipient_phone = db.Column(db.String(30), nullable=False)
+    store_name = db.Column(db.String(100), nullable=False)         # 取貨門市店名或代碼
+
+    order = db.relationship('Order', backref=db.backref('shipping', uselist=False))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "order_id": self.order_id,
+            "shipping_method": self.shipping_method,
+            "recipient_name": self.recipient_name,
+            "recipient_phone": self.recipient_phone,
+            "store_name": self.store_name
+        }

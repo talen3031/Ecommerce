@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Form, Input, Button, message } from "antd";
-import api from "./api";
+import api from "../../api/api";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 function ResetPassword() {

@@ -10,14 +10,17 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import api from "../../api/api";
 
 function Sidebar({ loggedIn, role }) {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.clear();
-    navigate("/login");
-    window.location.reload();
+    try {
+      await api.post('/auth/logout');
+    } catch (e) {}
+    window.location.href = "/";
   };
 
   if (!loggedIn) return null;

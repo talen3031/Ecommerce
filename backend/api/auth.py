@@ -1,9 +1,9 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify,make_response
 from service.user_service import UserService
 from service.audit_service import AuditService
 from models import User
-from flask_jwt_extended import jwt_required
-
+# refresh（從 cookie 讀 token）
+from flask_jwt_extended import jwt_required,decode_token,create_access_token
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 # 會員註冊
@@ -104,60 +104,6 @@ def register():
 # 登入
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    """
-    會員登入
-    ---
-    tags:
-      - auth
-    summary: 會員登入取得 JWT
-    parameters:
-      - in: body
-        name: body
-        required: true
-        schema:
-          type: object
-          required:
-            - email
-            - password
-          properties:
-            email:
-              type: string
-              example: "user@example.com"
-            password:
-              type: string
-              example: "abc12345"
-    responses:
-      200:
-        description: 登入成功
-        schema:
-          type: object
-          properties:
-            access_token:
-              type: string
-              example: "jwt.token...."
-            user_id:
-              type: integer
-              example: 1
-            role:
-              type: string
-              example: "user"
-      400:
-        description: 缺少欄位
-        schema:
-          type: object
-          properties:
-            error:
-              type: string
-              example: "Missing email or password"
-      401:
-        description: 帳號或密碼錯誤
-        schema:
-          type: object
-          properties:
-            error:
-              type: string
-              example: "Invalid email or password"
-    """
     data = request.json
     email = data.get('email')
     password = data.get('password')
@@ -166,8 +112,9 @@ def login():
         return jsonify({'error': 'Missing email or password'}), 400
 
     try:
-        result = UserService.login(email, password)
-        # 登入成功日誌
+        # result: { "access_token": ..., "refresh_token": ..., "user_id": ..., "role": ... }
+        result = UserService.login(email, password)   # 你要讓 login 支援 email
+        # 寫入日誌
         AuditService.log(
             user_id=result["user_id"],
             action='login',
@@ -175,7 +122,21 @@ def login():
             target_id=result["user_id"],
             description=f"User login success: email={email}"
         )
-        return jsonify(result), 200
+        # 把 refresh token 寫到 HttpOnly Cookie
+        resp = make_response(jsonify({
+            "access_token": result["access_token"],
+            "user_id": result["user_id"],
+            "role": result["role"]
+        }))
+        resp.set_cookie(
+            "refresh_token",
+            result["refresh_token"],
+            httponly=True,
+            secure=False,         # 開發用 False，正式記得 True（需要 https）
+            samesite='Strict',    # 如果多域名可設 Lax/None
+            max_age=7*24*60*60    # 7天
+        )
+        return resp
 
     except Exception as e:
         # 登入失敗日誌
@@ -189,11 +150,37 @@ def login():
         )
         return jsonify({'error': str(e)}), 401
 
+
+
+@auth_bp.route('/refresh', methods=['POST'])
+def refresh():
+    refresh_token = request.cookies.get('refresh_token')
+    if not refresh_token:
+        return jsonify({'error': 'Missing refresh token'}), 401
+    try:
+        #decoded = decode_token(refresh_token, allow_expired=False, algorithms=["HS256"])
+
+        decoded = decode_token(refresh_token)
+        user_id = decoded['sub']
+        user = User.get_by_user_id(user_id)
+        if not user:
+          return jsonify({'error': 'User not found'}), 401
+        access_token = create_access_token(
+                                  identity=str(user_id),
+                                  additional_claims={"role": user.role, "user_id": user.id}
+                              )
+        return jsonify({"access_token": access_token,
+                        "user_id": user_id,
+                        "role": user.role } )
+    except Exception as e:
+        print(e)
+        return jsonify({'error': 'Invalid or expired refresh token'}), 401
 # 登出
 @auth_bp.route('/logout', methods=['POST'])
-@jwt_required()
 def logout():
-    return jsonify({"message": "Logout success"})
+    resp = make_response(jsonify({"message": "Logout success"}))
+    resp.delete_cookie("refresh_token")
+    return resp
 
 # 忘記密碼：發送重設密碼連結
 @auth_bp.route('/forgot_password', methods=['POST'])
@@ -257,10 +244,11 @@ def reset_password():
     """
     data = request.json
     token = data.get('token')
-    new_password = data.get('new_password')
+    new_password = data.get('password')
 
     if not token or not new_password:
         return jsonify({"error": "Missing token or new password"}), 400
 
     UserService.reset_password(token, new_password)
     return jsonify({"message": "Password has been reset"}), 200
+
