@@ -1,4 +1,4 @@
-# 電商系統（Nerd.com）
+# Nerd.com
 
 ## 專案總覽
 

@@ -1,7 +1,9 @@
 import pytest
 import sys
 import os
-#最優先去指定的資料(專案根目錄下) 來imprt程式檔案app.py。
+from datetime import datetime, timedelta
+
+# 最優先去指定的資料(專案根目錄下) 來imprt程式檔案app.py。
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app import create_app
 from models import db, Category, Product
@@ -26,6 +28,11 @@ def user_token_and_id(client):
     user_id = login_res.get_json()['user_id']
     return token, user_id
 
+def admin_token(client):
+    client.post('/auth/register', json={'email': 'admin@example.com', 'password': 'adminpw', 'role': 'admin'})
+    login_res = client.post('/auth/login', json={'email': 'admin@example.com', 'password': 'adminpw'})
+    return login_res.get_json()['access_token']
+
 def test_order_flow(client, user_token_and_id):
     token, user_id = user_token_and_id
 
@@ -43,8 +50,8 @@ def test_order_flow(client, user_token_and_id):
     assert res.status_code == 200
     order_id = res.get_json()['order_id']
 
-    # 查詢歷史訂單
-    res = client.get(f'/orders/{user_id}', headers={'Authorization': f'Bearer {token}'})
+    # 查詢歷史訂單（修正路徑，不要帶 user_id）
+    res = client.get(f'/orders', headers={'Authorization': f'Bearer {token}'})
     print("查詢訂單 resp：", res.status_code, res.get_json())
     assert res.status_code == 200
     result = res.get_json()
@@ -53,13 +60,13 @@ def test_order_flow(client, user_token_and_id):
     order = orders[0]
     assert order['id'] == order_id
 
-    # 查詢訂單明細
-    res = client.get(f'/orders/order/{order_id}', headers={'Authorization': f'Bearer {token}'})
+    # 查詢訂單明細（修正為 /orders/<order_id>）
+    res = client.get(f'/orders/{order_id}', headers={'Authorization': f'Bearer {token}'})
     print("查詢訂單明細 resp：", res.status_code, res.get_json())
     assert res.status_code == 200
-    order = res.get_json()
-    assert order['order_id'] == order_id
-    assert order['items'][0]['product_id'] == 1
+    order_detail = res.get_json()
+    assert order_detail['order_id'] == order_id
+    assert order_detail['items'][0]['product_id'] == 1
 
     # 修改訂單狀態
     res = client.patch(f'/orders/{order_id}/status', json={'status': 'paid'},
@@ -67,15 +74,10 @@ def test_order_flow(client, user_token_and_id):
     print("改訂單狀態 resp：", res.status_code, res.get_json())
     assert res.status_code == 200
 
-    # 取消訂單
+    # 取消訂單（已付款不可取消，會回 400）
     res = client.post(f'/orders/{order_id}/cancel', headers={'Authorization': f'Bearer {token}'})
     print("取消訂單 resp：", res.status_code, res.get_json())
     assert res.status_code == 400
-
-def admin_token(client):
-    client.post('/auth/register', json={'email': 'admin@example.com', 'password': 'adminpw', 'role': 'admin'})
-    login_res = client.post('/auth/login', json={'email': 'admin@example.com', 'password': 'adminpw'})
-    return login_res.get_json()['access_token']
 
 def test_get_all_orders_as_admin(client, user_token_and_id):
     token, user_id = user_token_and_id
@@ -115,8 +117,8 @@ def test_cancel_order_wrong_status(client, user_token_and_id):
 
 def test_get_order_detail_404(client, user_token_and_id):
     token, _ = user_token_and_id
-    # 查一個不存在的 order_id
-    res = client.get(f'/orders/order/9999999999', headers={'Authorization': f'Bearer {token}'})
+    # 查一個不存在的 order_id（修正為 /orders/<order_id>）
+    res = client.get(f'/orders/9999999999', headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 404
 
 def test_cancel_order_404(client, user_token_and_id):
