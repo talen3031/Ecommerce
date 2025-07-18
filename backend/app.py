@@ -35,7 +35,7 @@ swagger_template = {
 }
 def create_app(test_config=None):
     app = Flask(__name__)
-    CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
+    CORS(app, supports_credentials=True, origins=["http://localhost:3000","https://ecommerce-frontend-latest.onrender.com"])
 
     # 預設用正式資料庫
     
