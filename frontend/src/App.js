@@ -22,6 +22,7 @@ import SidebarDrawer from "./features/sidebar/SidebarDrawer";
 import CheckoutPage from "./features/carts/CheckoutPage";
 import LoginButton from "./components/LoginButton";
 import HeroBanner from './components/HeroBanner';
+import About from "./About";
 
 
 import 'antd/dist/reset.css';
@@ -58,6 +59,7 @@ function App() {
           <Route path="/orders/:orderId" element={loggedIn ? <OrderList /> : <Navigate to="/login" />} />
           <Route path="/profile" element={loggedIn ? <UserProfile /> : <Navigate to="/login" />} />
           <Route path="/profile/edit" element={loggedIn ? <EditProfile /> : <Navigate to="/login" />} />
+          <Route path="/about" element={<About />} />
           <Route path="/admin/users/:id" element={<UserDetail />} />
           <Route path="/admin" element={loggedIn && role === "admin" ? <AdminPage /> : <Navigate to="/login" />} />
           <Route path="/reset_password" element={<ResetPassword />} />

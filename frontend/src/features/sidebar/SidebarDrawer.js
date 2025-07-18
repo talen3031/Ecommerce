@@ -8,7 +8,7 @@ import {
   OrderedListOutlined,
   UserOutlined,
   SettingOutlined,
-  LogoutOutlined,
+  LogoutOutlined,InfoCircleOutlined ,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
@@ -70,6 +70,14 @@ function SidebarDrawer({ loggedIn, role }) {
           <Menu.Item key="profile" icon={<UserOutlined />} onClick={() => navigate("/profile")}>
             會員資訊
           </Menu.Item>
+          <Menu.Item
+            key="about"
+            icon={<InfoCircleOutlined />}
+            onClick={() => navigate("/about")}
+          >
+            關於我
+          </Menu.Item>
+
           {role === "admin" && (
             <Menu.Item key="admin" icon={<SettingOutlined />} onClick={() => navigate("/admin")}>
               管理後台
