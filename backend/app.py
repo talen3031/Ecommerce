@@ -40,7 +40,6 @@ def create_app(test_config=None):
     # 預設用正式資料庫
     
     #app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI_LOCALHOST")
-
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
     print("Flask SQLALCHEMY_DATABASE_URI = ", os.environ.get("SQLALCHEMY_DATABASE_URI_LOCALHOST"))
     
@@ -80,7 +79,9 @@ def create_app(test_config=None):
         print("GLOBAL ERROR:", str(e).encode('utf-8', errors='replace').decode('utf-8'))
         print(traceback.format_exc())
         return jsonify({"error": f"GLOBAL ERROR: {str(e)}"}), 500
-    
+    @app.route('/')
+    def index():
+        return "Ecommerce API is running!"
     # ===========  註冊 Blueprint  =======  
     app.register_blueprint(products_bp)
     app.register_blueprint(users_bp)

@@ -1,17 +1,262 @@
+/* Enhanced ProductDetail.css with Better RWD */
+
 .addtocart-btn {
   background: #0c0c0c !important;
   color: #fff !important;
   font-weight: bold;
   border: none !important;
   border-radius: 12px;
-  font-size: 1.2rem;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.08);
-  height: 48px !important;
+  font-size: clamp(14px, 1.5vw, 16px) !important;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+  height: clamp(40px, 5vw, 48px) !important;
   width: 100% !important;
-  transition: all .15s;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
 .addtocart-btn:hover,
 .addtocart-btn:focus {
   background: #FFD900 !important;
   color: #222 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.12);
+}
+
+.addtocart-btn:active {
+  transform: translateY(0);
+}
+
+/* 響應式設計 */
+
+/* 超小屏幕 (手機直向) */
+@media screen and (max-width: 575px) {
+  .addtocart-btn {
+    height: 44px !important;
+    font-size: 14px !important;
+    border-radius: 10px;
+  }
+  
+  /* 確保在小屏幕上文字不會被截斷 */
+  .addtocart-btn span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* 小屏幕 (手機橫向) */
+@media screen and (min-width: 576px) and (max-width: 767px) {
+  .addtocart-btn {
+    height: 46px !important;
+    font-size: 15px !important;
+    border-radius: 11px;
+  }
+}
+
+/* 中等屏幕 (平板) */
+@media screen and (min-width: 768px) and (max-width: 991px) {
+  .addtocart-btn {
+    height: 48px !important;
+    font-size: 16px !important;
+    border-radius: 12px;
+  }
+}
+
+/* 大屏幕 (桌面) */
+@media screen and (min-width: 992px) {
+  .addtocart-btn {
+    height: 48px !important;
+    font-size: 16px !important;
+    border-radius: 12px;
+  }
+  
+  /* 桌面端增加更明顯的hover效果 */
+  .addtocart-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* 通用響應式樣式 */
+
+/* 商品圖片容器響應式 */
+.product-image-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: clamp(12px, 2vw, 16px);
+}
+
+/* 縮圖列表響應式 */
+.thumbnail-list {
+  display: flex;
+  gap: clamp(8px, 1.5vw, 12px);
+  justify-content: center;
+  flex-wrap: wrap;
+  overflow-x: auto;
+  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #e2e8f0 transparent;
+}
+
+.thumbnail-list::-webkit-scrollbar {
+  height: 4px;
+}
+
+.thumbnail-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thumbnail-list::-webkit-scrollbar-thumb {
+  background-color: #e2e8f0;
+  border-radius: 2px;
+}
+
+.thumbnail-list::-webkit-scrollbar-thumb:hover {
+  background-color: #cbd5e0;
+}
+
+/* 商品資訊區域響應式 */
+.product-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(16px, 3vw, 24px);
+}
+
+/* 價格顯示響應式 */
+.price-display {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 16px);
+  flex-wrap: wrap;
+}
+
+/* 數量選擇器響應式 */
+.quantity-selector {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2vw, 16px);
+  flex-wrap: wrap;
+}
+
+@media screen and (max-width: 575px) {
+  .quantity-selector {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+}
+
+/* Modal 響應式 */
+.product-modal {
+  max-width: 90vw;
+}
+
+@media screen and (max-width: 768px) {
+  .product-modal {
+    max-width: 95vw;
+  }
+}
+
+/* 觸控設備優化 */
+@media (hover: none) and (pointer: coarse) {
+  .addtocart-btn:hover {
+    transform: none;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+  }
+  
+  .addtocart-btn:active {
+    transform: scale(0.98);
+    transition: transform 0.1s;
+  }
+}
+
+/* 高 DPI 顯示器優化 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .addtocart-btn {
+    border: 0.5px solid transparent;
+  }
+}
+
+/* 減少動畫偏好設置 */
+@media (prefers-reduced-motion: reduce) {
+  .addtocart-btn {
+    transition: none;
+  }
+  
+  .addtocart-btn:hover {
+    transform: none;
+  }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .addtocart-btn {
+    box-shadow: 0 2px 12px 0 rgba(255, 255, 255, 0.1);
+  }
+  
+  .addtocart-btn:hover {
+    box-shadow: 0 4px 16px 0 rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* 焦點狀態優化 */
+.addtocart-btn:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* 禁用狀態 */
+.addtocart-btn:disabled {
+  background: #a0aec0 !important;
+  color: #ffffff !important;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.addtocart-btn:disabled:hover {
+  background: #a0aec0 !important;
+  color: #ffffff !important;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 載入狀態優化 */
+.addtocart-btn .ant-btn-loading-icon {
+  margin-right: 8px;
+}
+
+@media screen and (max-width: 575px) {
+  .addtocart-btn .ant-btn-loading-icon {
+    margin-right: 6px;
+  }
+}
+
+/* 文字選擇禁用 */
+.addtocart-btn {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* 確保按鈕在所有設備上都能正常顯示 */
+.addtocart-btn * {
+  pointer-events: none;
+}
+
+/* 防止按鈕文字換行 */
+.addtocart-btn {
+  white-space: nowrap;
+}
+
+/* 超寬屏幕優化 */
+@media screen and (min-width: 1400px) {
+  .addtocart-btn {
+    max-width: 300px;
+    margin: 0 auto;
+  }
 }
