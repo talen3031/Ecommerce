@@ -98,8 +98,8 @@ function About() {
                 https://github.com/talen3031/Ecommerce
             </a>
             </div>
-
     </div>
+    
   );
 }
 

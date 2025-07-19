@@ -8,16 +8,10 @@ flask-jwt-extended
 sqlalchemy
 flask-sqlalchemy
 flasgger
-gspread 
 pytest
 dotenv
 cloudinary
 google-auth
 line-bot-sdk
-#LangChain + AI
-langchain
-langchain-openai
-langchain-community
-langchain-experimental
-openai
 resend
+sendgrid

@@ -151,7 +151,7 @@ def login():
         return jsonify({'error': str(e)}), 401
 
 
-
+#refresh token 
 @auth_bp.route('/refresh', methods=['POST'])
 def refresh():
     refresh_token = request.cookies.get('refresh_token')
@@ -210,7 +210,7 @@ def forgot_password():
     user = User.get_by_email(email=email)
     if not user:
         # 防止暴露用戶資訊，直接回覆
-        return jsonify({"message": "If this email exists, a reset link will be sent"}), 200
+        return jsonify({"message": "If this email exists... a reset link will be sent"}), 200
 
     reset_link = UserService.send_reset_link(user_id=user.id)
     return jsonify({"message": f"If this email exists, a reset link will be sent"}), 200

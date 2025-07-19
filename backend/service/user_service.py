@@ -64,7 +64,7 @@ class UserService:
         db.session.commit()
         # 發送重設信
         #reset_link = f"http://localhost:3000/reset_password?token={token}"
-        reset_link = f"https://ecommerce-backend-latest-6fr5.onrender.com?token={token}"
+        reset_link = f"https://ecommerce-backend-latest-6fr5.onrender.com/reset_password?token={token}"
         user = User.get_by_user_id(user_id)
         
         if user and user.email:
@@ -73,7 +73,7 @@ class UserService:
             try:
                 send_email(user.email, subject, content)
             except Exception as e:
-                print("寄信失敗", e)
+                print("重設密碼 寄信失敗", e)
                 import traceback; traceback.print_exc()
             print("重設密碼 寄信成功 reset_link:",reset_link)
 
