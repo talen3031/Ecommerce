@@ -19,8 +19,8 @@ class ProductService:
             query = query.filter(Product.price >= min_price)
         if max_price is not None:
             query = query.filter(Product.price <= max_price)
-
-        query =query.order_by(Product.id.desc())
+        
+        query =query.order_by(Product.title.desc())
         
         return query.paginate(page=page, per_page=per_page, error_out=False)
     

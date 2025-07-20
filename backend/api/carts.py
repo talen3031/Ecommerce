@@ -1,12 +1,11 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import db, Cart, CartItem, Product, Order, OrderItem
+from models import db, Cart
 from datetime import datetime
 from service.cart_service import CartService
 from service.audit_service import AuditService
 from service.product_service import ProductService 
 from service.discount_service import DiscountService
-
 carts_bp = Blueprint('carts', __name__, url_prefix='/carts')
 #查詢購物車
 @carts_bp.route('/<int:user_id>', methods=['GET'])
@@ -72,7 +71,6 @@ def get_cart(user_id):
     current_user = get_jwt_identity()
     if int(current_user) != user_id:
         return jsonify({"error": "Permission denied"}), 403
-
     cart = CartService.get_cart(user_id=user_id)
     if not cart:
         return jsonify({"cart": None, "items": []})

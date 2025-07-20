@@ -4,9 +4,9 @@ requests
 psycopg2
 flask-jwt-extended
 werkzeug 
-flask-jwt-extended
 sqlalchemy
 flask-sqlalchemy
+flask_caching
 flasgger
 pytest
 dotenv

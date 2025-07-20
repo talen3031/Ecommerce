@@ -62,19 +62,24 @@ class DiscountService:
 
         # 整理本次要結帳的購物車商品（可以只結帳部分商品）
         def build_items():
+            # 建立 {product_id: cart_item} 的映射
+            cart_items_dict={}
+            for ci in cart.cart_items:
+                cart_items_dict[ci.product_id]:ci
+
             result = []
             if not items_to_checkout:
                 return list(cart.cart_items)
             for checkout_item in items_to_checkout:
-                for ci in cart.cart_items:
-                    if ci.product_id == checkout_item["product_id"]:
-                        temp_item = type('obj', (), {})()
-                        temp_item.product = ci.product
-                        temp_item.quantity = checkout_item.get("quantity", ci.quantity)
-                        temp_item.product_id = ci.product_id
-                        result.append(temp_item)
-                        break
+                ci = cart_items_dict.get(checkout_item["product_id"])
+                if ci:
+                    temp_item = type('obj', (), {})()
+                    temp_item.product = ci.product
+                    temp_item.quantity = checkout_item.get("quantity", ci.quantity)
+                    temp_item.product_id = ci.product_id
+                    result.append(temp_item)
             return result
+
 
         items = build_items()
         if not items:

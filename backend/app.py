@@ -13,9 +13,9 @@ from api.linemessage import linemessage_bp
 from exceptions import NotFoundError, DuplicateError, UnauthorizedError, ForbiddenError
 from flask_jwt_extended import JWTManager
 from flasgger import Swagger
+from cache import cache
 from flask_cors import CORS
 import os
-import sys
 from datetime import timedelta
 swagger_template = {
     "swagger": "2.0",
@@ -35,13 +35,15 @@ swagger_template = {
 }
 def create_app(test_config=None):
     app = Flask(__name__)
+    # 初始化 SimpleCache（記憶體快取，單機專用）
+    cache.init_app(app, config={'CACHE_TYPE': 'SimpleCache'})
     CORS(app, supports_credentials=True, origins=["http://localhost:3000","https://ecommerce-frontend-latest.onrender.com"])
 
     # 預設用正式資料庫
     
     #app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI_LOCALHOST")
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("SQLALCHEMY_DATABASE_URI")
-    print("Flask SQLALCHEMY_DATABASE_URI = ", os.environ.get("SQLALCHEMY_DATABASE_URI_LOCALHOST"))
+    #print("Flask SQLALCHEMY_DATABASE_URI = ", os.environ.get("SQLALCHEMY_DATABASE_URI_LOCALHOST"))
     
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=60)  # access token 60分
     app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=7)     # refresh token 7天

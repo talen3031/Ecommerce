@@ -7,6 +7,9 @@ from models import db, Product
 from service.product_service import ProductService
 from service.audit_service import AuditService
 from datetime import datetime
+# 引入 cache 實體
+from cache import cache
+
 
 """
 definitions:
@@ -36,6 +39,7 @@ products_bp = Blueprint('products', __name__, url_prefix='/products')
 
 # 查詢所有商品
 @products_bp.route('', methods=['GET'])
+@cache.cached(timeout=300, query_string=True)   # <== 這行才是真正快取
 def get_products():
     """
     查詢所有商品
@@ -249,7 +253,7 @@ def create_product():
           category_id=category_id,
           images=images
     )
-    
+    cache.clear()
     admin_id = get_jwt_identity()
     #寫入日志
     AuditService.log(
@@ -339,7 +343,7 @@ def update_product(product_id):
         description=description, 
         images = images
     )
-
+    cache.clear()
     # 取得操作者ID
     admin_id = get_jwt_identity()
 
@@ -391,7 +395,7 @@ def delete_product(product_id):
     """
 
     product = ProductService.delete_product(product_id)
-    
+    cache.clear()
     admin_id = get_jwt_identity()
 
      #寫入日志
@@ -471,7 +475,7 @@ def add_product_sale(product_id):
                                            start_date=start_date_str,
                                            end_date=end_date_str,
                                            description=description)
-
+    cache.clear()
     admin_id = get_jwt_identity() 
     # 寫入日誌
     AuditService.log(
@@ -519,6 +523,8 @@ def deactivate_product(product_id):
     """
     
     product = ProductService.set_product_active_status(product_id, False)
+    cache.clear()
+
     AuditService.log(
         user_id=get_jwt_identity(),
         action='deactivate',
@@ -526,13 +532,14 @@ def deactivate_product(product_id):
         target_id=product_id,
         description=f"Product {product_id} deactivated"
     )
-    return jsonify({"message": "Product deactivated"})
+    return jsonify({"message": f"Product{product.title}  deactivated"})
 
 @products_bp.route('/<int:product_id>/activate', methods=['POST'])
 @jwt_required()
 @admin_required
 def activate_product(product_id):
     product = ProductService.set_product_active_status(product_id, True)
+    cache.clear()
     AuditService.log(
         user_id=get_jwt_identity(),
         action='activate',
@@ -540,4 +547,4 @@ def activate_product(product_id):
         target_id=product_id,
         description=f"Product {product_id} activated"
     )
-    return jsonify({"message": "Product activated"})
+    return jsonify({"message": f"Product{product.title} activated"})

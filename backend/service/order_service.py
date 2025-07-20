@@ -3,6 +3,7 @@ from exceptions import NotFoundError,ForbiddenError,DuplicateError
 from service.audit_service import AuditService
 from utils.notify_util import send_email_notify_user_order_status,send_line_notify_user_order_status
 from datetime import datetime
+from sqlalchemy.orm import joinedload
 
 class OrderService:
     
@@ -33,29 +34,31 @@ class OrderService:
     @staticmethod
     def get_order_detail(order_id):
         """查詢單一訂單的詳細資料，含所有明細商品"""
-        order = Order.query.filter_by(id=order_id).first()
+        order = (
+            Order.query
+            .options(
+                joinedload(Order.order_items).joinedload(OrderItem.product),# 預載入 order_items product
+                joinedload(Order.shipping),   # 預載入 shipping
+            )
+            .filter_by(id=order_id)
+            .first()
+        )
         if not order:
             raise NotFoundError("Order not found")
-    
-        # 組合 items 清單
+
+        # 這時候每個 item.product 已經在記憶體，不會再查 DB
         items = []
         for item in order.order_items:
-            product = db.session.get(Product, item.product_id)
+            product = item.product
             items.append({
                 "product_id": product.id,
                 "title": product.title,
                 "price": float(product.get_final_price()),
                 "quantity": item.quantity,
                 "images": product.images
-
             })
-        # if order.discount_code_id:
-        #     dc = DiscountCode.get_by_id(order.discount_code_id)
-        
-        # 取得 shipping info（假設 order.shipping 關聯正確）
-        shipping_info = None
-        if order.shipping:
-            shipping_info = order.shipping.to_dict()
+
+        shipping_info = order.shipping.to_dict() if order.shipping else None
 
         result = {
             "order_id": order.id,
@@ -63,13 +66,13 @@ class OrderService:
             "order_date": str(order.order_date),
             "total": float(order.total),
             "status": order.status,
-            #"discount_code": dc.to_dict(),
             "discount_code_id": order.discount_code_id,
             "discount_amount": order.discount_amount,
             "items": items,
-            "shipping_info":shipping_info
+            "shipping_info": shipping_info
         }
         return result
+
 
     @staticmethod
     def cancel_order(order_id):

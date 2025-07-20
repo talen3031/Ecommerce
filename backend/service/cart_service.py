@@ -5,6 +5,7 @@ from service.audit_service import AuditService
 from service.discount_service import DiscountService
 from service.order_service import OrderService
 from utils.notify_util import send_email_notify_order_created,send_line_notify_order_created
+from sqlalchemy.orm import joinedload
 
 class CartService:
 
@@ -13,29 +14,36 @@ class CartService:
         """
         回傳該用戶目前 active 狀態的購物車（含所有商品明細）
         """
-        cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
+        cart = (
+            Cart.query
+            .options(
+                joinedload(Cart.cart_items).joinedload(CartItem.product)
+            )
+            .filter_by(user_id=user_id, status='active')
+            .order_by(Cart.created_at.desc())
+            .first()
+        )
         if not cart:
-            return None  # 或視需求回傳 {"cart": None, "items": []}
+            return None
 
         items = []
         for item in cart.cart_items:
             product = item.product
             if not product or not product.is_active:
-                continue  # 跳過下架商品
-            #計算折扣後價格
+                continue
             final_price = product.get_final_price() if product else 0
             items.append({
                 "product_id": item.product_id,
-                "title": item.product.title if item.product else None,
-                "price":final_price,
-                "orginal_price": float(item.product.price) if product and product.price else 0.0,
+                "title": product.title if product else None,
+                "price": final_price,
+                "orginal_price": float(product.price) if product and product.price else 0.0,
                 "quantity": item.quantity,
                 "images": product.images
             })
-        res = cart.to_dict() 
+        res = cart.to_dict()
         res["items"] = items
         return res
-    
+
     @staticmethod
     def add_to_cart(user_id, product_id, quantity=1):
         # 1. 取得該用戶最新（active）購物車，沒有則新建
@@ -184,7 +192,12 @@ class CartService:
 
     @staticmethod
     def _get_active_cart(user_id):
-        cart = Cart.query.filter_by(user_id=user_id, status='active').order_by(Cart.created_at.desc()).first()
+        cart = (Cart.query.options(
+                            joinedload(Cart.cart_items).joinedload(CartItem.product)
+                ).filter_by(user_id=user_id, status='active')
+                .order_by(Cart.created_at.desc())
+                .first()
+                )
         if not cart:
             raise ValueError("No active cart to checkout")
         return cart

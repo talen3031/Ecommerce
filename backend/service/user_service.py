@@ -64,7 +64,7 @@ class UserService:
         db.session.commit()
         # 發送重設信
         #reset_link = f"http://localhost:3000/reset_password?token={token}"
-        reset_link = f"https://ecommerce-backend-latest-6fr5.onrender.com/reset_password?token={token}"
+        reset_link = f"https://ecommerce-frontend-latest.onrender.com/reset_password?token={token}"
         user = User.get_by_user_id(user_id)
         
         if user and user.email:
