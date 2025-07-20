@@ -65,7 +65,7 @@ class DiscountService:
             # 建立 {product_id: cart_item} 的映射
             cart_items_dict={}
             for ci in cart.cart_items:
-                cart_items_dict[ci.product_id]:ci
+                cart_items_dict[ci.product_id]=ci
 
             result = []
             if not items_to_checkout:
