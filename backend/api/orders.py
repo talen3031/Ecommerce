@@ -94,6 +94,7 @@ def get_order_detail(order_id):
     detail = OrderService.get_order_detail(order_id)
     return jsonify(detail)
 
+#admin查詢所有訂單
 @orders_bp.route('/all', methods=['GET'])
 @admin_required
 def get_all_orders():
@@ -359,42 +360,37 @@ def update_shipping_info(order_id):
 
     return jsonify(shipping.to_dict()), 200
 
-#=============不讓人呼叫 目前只在 CartService.checkout 中實現 =======================
-# @orders_bp.route('/<int:order_id>/shipping', methods=['POST'])
-# @jwt_required()
-# def set_shipping_info(order_id):
-#     current_user_id = int(get_jwt_identity())
-#     user = User.get_by_user_id(current_user_id)
-#     order = Order.get_by_order_id(order_id=order_id)
 
-#     if not order:
-#         return jsonify({"error": "Order not found"}), 404
-#     if user.role != "admin" and order.user_id != current_user_id:
-#         return jsonify({"error": "Permission denied"}), 403
 
-#     data = request.json or {}
-#     shipping_method = data.get("shipping_method")
-#     recipient_name = data.get("recipient_name")
-#     recipient_phone = data.get("recipient_phone")
-#     store_name = data.get("store_name")
 
-#     missing = []
-#     if not shipping_method:
-#         missing.append("shipping_method")
-#     if not recipient_name:
-#         missing.append("recipient_name")
-#     if not recipient_phone:
-#         missing.append("recipient_phone")
-#     if not store_name:
-#         missing.append("store_name")
-#     if missing:
-#         return jsonify({"error": f"缺少欄位: {', '.join(missing)}"}), 400
-    
-#     shipping = OrderService.set_shipping_info(order_id=order_id, 
-#                                               shipping_method=shipping_method,
-#                                               recipient_name=recipient_name,
-#                                               recipient_phone=recipient_phone,
-#                                               store_name=store_name,  
-#                                               operator_user_id=user.id)
+#訪客查詢訂單明細
+@orders_bp.route('/guest/<string:guest_id>/<int:order_id>', methods=['GET'])
+def get_guest_order_detail(guest_id, order_id):
+    """
+    訪客查詢自己的單筆訂單（用GET＋query string, 需帶 email 參數）
+    範例：/orders/guest/<guest_id>/<order_id>?email=xxx@example.com
+    """
+    email = request.args.get("email")
+    if not email:
+        return jsonify({"error": "email is required"}), 400
+    detail = OrderService.get_order_detail_guest(order_id, guest_id, email)
+    return jsonify(detail)
 
-#     return jsonify(shipping.to_dict()), 201
+@orders_bp.route('/guest/<string:guest_id>/<int:order_id>/cancel', methods=['POST'])
+def cancel_guest_order(guest_id, order_id):
+    email = request.json.get("email")
+    if not guest_id or not email:
+        return jsonify({"error": "缺少 guest_id 或 email"}), 400
+    order = OrderService.cancel_order_guest(order_id, guest_id, email)
+
+
+    # 日誌紀錄
+    AuditService.log(
+        user_id=None,
+        action='guest_cancel',
+        target_type='order',
+        target_id=order.id,
+        description=f"[guest] cancel order: {order.to_dict()}"
+    )
+
+    return jsonify({"message": "Order cancelled"})

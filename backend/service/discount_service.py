@@ -39,7 +39,11 @@ class DiscountService:
         return DiscountCode.query.filter_by(code=code).first()
     
     @staticmethod
-    def apply_discount_code(user_id, cart, code, items_to_checkout=None):
+    def apply_discount_code(user_id=None, guest_id=None, cart=None, code=None, items_to_checkout=None):
+        if (not user_id) and (not guest_id):
+            raise  ValueError("user_id 或 guest_id 必須至少有一個")
+        if user_id and  guest_id:
+            raise  ValueError("user_id 或 guest_id 只能傳入一個")
         """
         檢查折扣碼是否可用，計算折扣後金額，同時回傳優惠規則描述與本次結帳有無實際採用折扣碼
         :return: (success, message, discount_code物件, 折扣後金額, 折扣金額, 規則說明, used_coupon)
@@ -56,8 +60,12 @@ class DiscountService:
         if dc.valid_from > now or dc.valid_to < now:
             return False, "折扣碼不在有效期限", None, None, None, "", False
 
-        # 查詢該用戶的折扣碼使用次數
-        user_dc = UserDiscountCode.query.filter_by(user_id=user_id, discount_code_id=dc.id).first()
+        # 查詢該用戶或訪客的折扣碼使用次數
+        user_dc = None
+        if user_id:
+            user_dc = UserDiscountCode.query.filter_by(user_id=user_id, discount_code_id=dc.id).first()
+        elif guest_id:
+            user_dc = UserDiscountCode.query.filter_by(guest_id=guest_id, discount_code_id=dc.id).first()
         user_usage = user_dc.used_count if user_dc else 0
 
         # 整理本次要結帳的購物車商品（可以只結帳部分商品）
@@ -168,25 +176,40 @@ class DiscountService:
 
 
     @staticmethod
-    def consume_discount_code(user_id, code):
-        """結帳成功後，折扣碼用掉一次（全局＋該用戶）"""
+    def consume_discount_code(user_id=None, guest_id=None, code=None):
+        """結帳成功後，折扣碼用掉一次（全局＋該用戶/訪客）"""
+
+        if (not user_id) and (not guest_id):
+            raise  ValueError("user_id 或 guest_id 必須至少有一個")
+        if user_id and  guest_id:
+            raise  ValueError("user_id 或 guest_id 只能傳入一個")
+        
         dc = DiscountCode.query.filter_by(code=code, is_active=True).first()
         if not dc:
             return
         dc.used_count = (dc.used_count or 0) + 1
-        # 該用戶的紀錄
-        user_dc = UserDiscountCode.query.filter_by(user_id=user_id, discount_code_id=dc.id).first()
+
+        # 查會員/訪客紀錄
+        user_dc = None
+        if user_id:
+            user_dc = UserDiscountCode.query.filter_by(user_id=user_id, discount_code_id=dc.id).first()
+        elif guest_id:
+            user_dc = UserDiscountCode.query.filter_by(guest_id=guest_id, discount_code_id=dc.id).first()
+
         if not user_dc:
-            user_dc = UserDiscountCode(user_id=user_id, discount_code_id=dc.id, used_count=1)
+            user_dc = UserDiscountCode(
+                user_id=user_id if user_id else None,
+                guest_id=guest_id if guest_id else None,
+                discount_code_id=dc.id,
+                used_count=1
+            )
             db.session.add(user_dc)
         else:
-            user_dc.used_count += 1 
+            user_dc.used_count += 1
             user_dc.last_used_at = datetime.now()
         db.session.commit()
-        
     @staticmethod
     def deactivate_discount_code(code):
         code.is_active = False
-        #code.valid_to = min(code.valid_to, datetime.now())  # 可以強制失效（可選）
         db.session.commit()
         return code

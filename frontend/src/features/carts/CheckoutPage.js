@@ -3,12 +3,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Table, Input, Button, Select, Form, message, Modal } from "antd";
 import api from "../../api/api";
 import '../../styles/CheckoutPage.css'
+import { getGuestId } from "../../api/api";
 
 function CheckoutPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { cart } = location.state || {};
-  const [loading, setLoading] = useState(false);
+  const userId = localStorage.getItem("user_id");
+  const isLogin = !!userId;
+  const guestId = getGuestId();
+  const [loading, setLoading] = useState(false); // <--- 這一行補上
 
   // 折扣碼
   const [discountCode, setDiscountCode] = useState("");
@@ -76,8 +80,13 @@ function CheckoutPage() {
     setDiscountRuleMsg(""); // 清除前一次的規則訊息
     setApplyingDiscount(true);
     try {
+      let res;
       const userId = localStorage.getItem("user_id");
-      const res = await api.post(`/carts/${userId}/apply_discount`, { code: discountCode });
+      if (isLogin) {
+        res = await api.post(`/carts/${userId}/apply_discount`, { code: discountCode });
+      } else {
+        res = await api.post(`/carts/guest/${guestId}/apply_discount`, { code: discountCode });
+      }
 
       if (res.data.success && res.data.used_coupon) {
         setDiscountInfo(res.data);
@@ -103,46 +112,60 @@ function CheckoutPage() {
 
   // **原本 onFinish 內容移到這**
   const handleCheckout = async (values) => {
-    const userId = localStorage.getItem("user_id");
-    setLoading(true);
-    try {
-      const items = cart.items.map(item => ({
-        product_id: item.product_id,
-        quantity: item.quantity
-      }));
-      const body = {
-        items,
-        shipping_info: {
-          shipping_method: values.shipping_method,
-          recipient_name: values.recipient_name,
-          recipient_phone: values.recipient_phone,
-          store_name: values.store_name
-        }
-      };
-      if (discountInfo && discountInfo.success && discountInfo.discount_code?.code) {
-        body.discount_code = discountInfo.discount_code.code;
-      }
-      const res = await api.post(`/carts/${userId}/checkout`, body);
-      setModalContent({
-        title: "下單成功",
-        content: `訂單號：${res.data.order_id}`,
-        success: true
-      });
-      setModalOpen(true);
-      setTimeout(() => {
+  setLoading(true);
+  try {
+    const items = cart.items.map(item => ({
+      product_id: item.product_id,
+      quantity: item.quantity
+    }));
+    const shipping_info = {
+      shipping_method: values.shipping_method,
+      recipient_name: values.recipient_name,
+      recipient_phone: values.recipient_phone,
+      store_name: values.store_name,
+    };
+    // 如果是訪客，必須加入 email
+    if (!isLogin) shipping_info.recipient_email = values.recipient_email;
+
+    const body = { items, shipping_info };
+    if (discountInfo && discountInfo.success && discountInfo.discount_code?.code) {
+      body.discount_code = discountInfo.discount_code.code;
+    }
+
+    let res;
+    if (isLogin) {
+      res = await api.post(`/carts/${userId}/checkout`, body);
+    } else {
+      res = await api.post(`/carts/guest/${guestId}/checkout`, body);
+    }
+
+    setModalContent({
+      title: "下單成功",
+      content: `訂單號：${res.data.order_id}`,
+      success: true
+    });
+    setModalOpen(true);
+
+
+    setTimeout(() => {
       setModalOpen(false);
-      navigate("/orders");
-        }, 1200);
-      } catch (err) {
-        setModalContent({
-          title: "結帳失敗",
-          content: err.response?.data?.error || err.message,
-          success: false
-        });
-        setModalOpen(true);
+      if (isLogin) {
+        navigate("/orders");
+      } else {
+        navigate(`/guest-order-detail?guest_id=${guestId}&order_id=${res.data.order_id}&email=${encodeURIComponent(values.recipient_email)}`);
       }
-      setLoading(false);
+    }, 1200);} 
+    catch (err) {
+    setModalContent({
+      title: "結帳失敗",
+      content: err.response?.data?.error || err.message,
+      success: false
+    });
+    setModalOpen(true);
+  }
+  setLoading(false);
 };
+
 
   // **新的 onFinish：先彈出確認 Modal**
   const handleFormFinish = (values) => {
@@ -225,7 +248,18 @@ function CheckoutPage() {
           store_name: ""
         }}
         style={{ marginTop: 8 }}
-      >
+      >{!isLogin && (
+          <Form.Item
+            label="Email"
+            name="recipient_email"
+            rules={[
+              { required: true, message: "請輸入 Email" },
+              { type: "email", message: "Email 格式錯誤" }
+            ]}
+          >
+            <Input />
+          </Form.Item>
+        )}
         <Form.Item
           label="寄送方式"
           name="shipping_method"
@@ -265,6 +299,7 @@ function CheckoutPage() {
           確定結帳
         </Button>
         </Form.Item>
+        
       </Form>
 
       {/* ======= 新增：送出前確認 Modal ======= */}
@@ -300,6 +335,11 @@ function CheckoutPage() {
             ))}
           </ul>
           <div style={{ margin: "8px 0" }}>
+            {!isLogin && (
+              <>
+                <b>Email：</b> {pendingOrder?.recipient_email}<br />
+              </>
+            )}
             <b>寄送方式：</b> {pendingOrder?.shipping_method}<br />
             <b>收件人：</b> {pendingOrder?.recipient_name}<br />
             <b>電話：</b> {pendingOrder?.recipient_phone}<br />

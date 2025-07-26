@@ -1,4 +1,3 @@
-// src/SidebarDrawer.js
 import React, { useState } from "react";
 import { Drawer, Menu, Button } from "antd";
 import {
@@ -8,7 +7,8 @@ import {
   OrderedListOutlined,
   UserOutlined,
   SettingOutlined,
-  LogoutOutlined,InfoCircleOutlined ,
+  LogoutOutlined,
+  InfoCircleOutlined
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/api";
@@ -20,20 +20,16 @@ function SidebarDrawer({ loggedIn, role }) {
   const handleLogout = async () => {
     try {
       await api.post("/auth/logout", {}, { withCredentials: true });
-    } catch (e) {
-      // 可以忽略錯誤（無論如何都清除本地端）
-    }
+    } catch (e) {}
     localStorage.clear();
     navigate("/");
     window.location.reload();
   };
 
-
-  if (!loggedIn) return null;
-
+  // ====== 這裡不再 return null，讓訪客也能拉出側邊欄 ======
   return (
     <>
-        {/* 只有 Drawer 關閉時才顯示漢堡按鈕 */}
+      {/* 只有 Drawer 關閉時才顯示漢堡按鈕 */}
       {!open && (
         <Button
           icon={<MenuOutlined />}
@@ -64,28 +60,32 @@ function SidebarDrawer({ loggedIn, role }) {
           <Menu.Item key="cart" icon={<ShoppingCartOutlined />} onClick={() => navigate("/cart")}>
             購物車
           </Menu.Item>
-          <Menu.Item key="orders" icon={<OrderedListOutlined />} onClick={() => navigate("/orders")}>
-            訂單查詢
-          </Menu.Item>
-          <Menu.Item key="profile" icon={<UserOutlined />} onClick={() => navigate("/profile")}>
-            會員資訊
-          </Menu.Item>
-          <Menu.Item
-            key="about"
-            icon={<InfoCircleOutlined />}
-            onClick={() => navigate("/about")}
-          >
+          {/* 只有登入才顯示會員專屬選單 */}
+          {loggedIn && (
+            <>
+              <Menu.Item key="orders" icon={<OrderedListOutlined />} onClick={() => navigate("/orders")}>
+                訂單查詢
+              </Menu.Item>
+              <Menu.Item key="profile" icon={<UserOutlined />} onClick={() => navigate("/profile")}>
+                會員資訊
+              </Menu.Item>
+            </>
+          )}
+          <Menu.Item key="about" icon={<InfoCircleOutlined />} onClick={() => navigate("/about")}>
             關於我
           </Menu.Item>
-
-          {role === "admin" && (
+          {/* 只有管理員才有後台 */}
+          {loggedIn && role === "admin" && (
             <Menu.Item key="admin" icon={<SettingOutlined />} onClick={() => navigate("/admin")}>
               管理後台
             </Menu.Item>
           )}
-          <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout} style={{ color: "#f5222d" }}>
-            登出
-          </Menu.Item>
+          {/* 登入才有登出 */}
+          {loggedIn && (
+            <Menu.Item key="logout" icon={<LogoutOutlined />} onClick={handleLogout} style={{ color: "#f5222d" }}>
+              登出
+            </Menu.Item>
+          )}
         </Menu>
       </Drawer>
     </>

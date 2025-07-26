@@ -8,11 +8,19 @@ from sqlalchemy.orm import joinedload
 class OrderService:
     
     @staticmethod
-    def _create_order(user_id):
-        order = Order(user_id=user_id, order_date=datetime.now(), total=0, status='pending')
+    def _create_order(user_id=None, guest_id=None, guest_email=None):
+        order = Order(
+            user_id=user_id,
+            guest_id=guest_id,
+            guest_email=guest_email,
+            order_date=datetime.now(),
+            total=0,
+            status='pending'
+        )
         db.session.add(order)
         db.session.flush()  # 先獲得 order.id
         return order
+
     @staticmethod
     def _add_order_item(order_id, product_id, quantity, price):
         order_item = OrderItem(order_id=order_id, product_id=product_id, quantity=quantity, price=price)
@@ -72,7 +80,50 @@ class OrderService:
             "shipping_info": shipping_info
         }
         return result
+    
+    @staticmethod
+    def get_order_detail_guest(order_id, guest_id, guest_email):
+        """
+        訪客查詢自己的單筆訂單的詳細資料
+        """
+        order = (
+            Order.query
+            .options(
+                joinedload(Order.order_items).joinedload(OrderItem.product),
+                joinedload(Order.shipping),
+            )
+            .filter_by(id=order_id, guest_id=guest_id, guest_email=guest_email)
+            .first()
+        )
+        if not order:
+            raise NotFoundError("Order not found")
 
+        items = []
+        for item in order.order_items:
+            product = item.product
+            items.append({
+                "product_id": product.id,
+                "title": product.title,
+                "price": float(product.get_final_price()),
+                "quantity": item.quantity,
+                "images": product.images
+            })
+
+        shipping_info = order.shipping.to_dict() if order.shipping else None
+
+        result = {
+            "order_id": order.id,
+            "user_id": order.user_id,
+            "order_date": str(order.order_date),
+            "total": float(order.total),
+            "status": order.status,
+            "discount_code_id": order.discount_code_id,
+            "discount_amount": order.discount_amount,
+            "guest_email": order.guest_email,
+            "items": items,
+            "shipping_info": shipping_info
+        }
+        return result
 
     @staticmethod
     def cancel_order(order_id):
@@ -80,17 +131,43 @@ class OrderService:
         order = Order.query.filter_by(id=order_id).first()
         if not order:
             raise NotFoundError("Order not found")
-        if order.status != 'pending':
-            raise ValueError("Only pending orders can be cancelled")
+        if order.status not in ["pending", "paid"]:
+            raise ValueError("Only pending or paid orders can be cancelled")
         order.status = 'cancelled'
         db.session.commit()
+        
                 #email 寄信通知
         send_email_notify_user_order_status(order)
         #line 新增推播通知
         user = User.get_by_user_id(order.user_id)
         send_line_notify_user_order_status(user, order)
         return order
-
+    
+    
+    @staticmethod
+    def cancel_order_guest(order_id, guest_id, guest_email):
+        """
+        訪客訂單取消邏輯：同時驗證 guest_id 與 email
+        """
+        order = Order.query.filter_by(id=order_id, guest_id=guest_id, guest_email=guest_email).first()
+        if not order:
+            raise NotFoundError("Order not found or permission denied")
+        # 執行取消（直接複用原本 cancel_order，但要注意可能權限不同）
+        if order.status not in ["pending", "paid"]:
+            raise ValueError("Only pending or paid orders can be cancelled")
+        order.status = 'cancelled'
+        db.session.commit()
+        # email 通知
+        send_email_notify_user_order_status(order)
+        AuditService.log(
+        guest_id=guest_id,
+        action='guest_cancel',
+        target_type='order',
+        target_id=order.id,
+        description=f"[{guest_id}] cancel order: {order.to_dict()}"
+        )
+        return order
+    
     @staticmethod
     def update_order_status(order_id, status):
         """更新訂單狀態"""
@@ -158,7 +235,8 @@ class OrderService:
             db.session.add(shipping)
         # 日誌
         AuditService.log(
-            user_id=operator_user_id,
+            user_id = operator_user_id if operator_user_id is not None and isinstance(operator_user_id, int) else None, 
+            guest_id = operator_user_id if operator_user_id is not None and isinstance(operator_user_id, str) else None,
             action='set',
             target_type='order_shipping',
             target_id=shipping.id,

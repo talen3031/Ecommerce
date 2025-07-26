@@ -1,28 +1,26 @@
 from models import CartItem, Product,User  # 避免循環 import
 from utils.send_email import send_email  # 你自己的寄信工具
-import sys# 確保 print 可以用
+import sys # 確保 print 可以用
 from utils.line_bot import push_message
-import threading
+import urllib.parse
+from config import get_current_config
 
-def async_send_order_notify(order, user, order_items):
-    def _notify():
-        from app import app  # 必須在 function 內部 import
-        with app.app_context():
-            from utils.notify_util import send_email_notify_order_created, send_line_notify_order_created
-            send_email_notify_order_created(order)
-            send_line_notify_order_created(user, order, order_items)
-    threading.Thread(target=_notify).start()
+
+
 def send_email_notify_order_created(order):
+    # 判定是訪客訂單還是用戶訂單
     user = order.user
-    if user and user.email:
+    is_guest = not bool(user)
+    if user:
+        email = user.email
+    else:
+        email = order.guest_email
+
+    if email:
         subject = "您在Nerd.com的訂單已成立！"
         items_html = ""
         for item in order.order_items:
-            # 取第一張商品圖片
-            img_url = None
-            if item.product.images and len(item.product.images) > 0:
-                img_url = item.product.images[0]
-            # 商品資訊區塊（全部黑色字體，不用超連結）
+            img_url = item.product.images[0] if item.product.images and len(item.product.images) > 0 else None
             items_html += (
                 "<div style='margin-bottom:16px; color:#111;'>"
                 f"<span style='font-size:16px; color:#111; font-weight:600;'>{item.product.title}</span>"
@@ -34,13 +32,11 @@ def send_email_notify_order_created(order):
                 + "</div>"
             )
 
-        # 折扣資訊（只顯示折扣金額）
         discount_lines = []
         if getattr(order, "discount_code_id", None):
             discount_amount = getattr(order, "discount_amount", 0)
             discount_lines.append(f"<span style='color:#111;'>折扣金額：{discount_amount:.0f} 元</span><br>")
 
-        # 組合 email 內容
         html_lines = [
             "<div style='color:#111; font-size:15px;'>",
             "您好，<br>",
@@ -57,37 +53,67 @@ def send_email_notify_order_created(order):
         html_lines.append(
             "感謝您的訂購！請匯款至 (700) 03112790016408 後，我們會盡快出貨～<br>若有任何問題，請隨時聯繫客服 0923956156。"
         )
+        # 新增：如果是訪客，加上訂單明細查詢連結
+        if is_guest:
+            base_url = get_current_config().FRONTEND_BASE_URL.rstrip('/') + "/guest-order-detail"
+
+            email_encoded = urllib.parse.quote(email, safe='')  # 把 email encode 成網址可用格式
+            url = f"{base_url}?guest_id={order.guest_id}&order_id={order.id}&email={email_encoded}"
+            html_lines.append("<hr>")
+            html_lines.append(
+                f"👉 您可隨時查詢訂單明細：<a href='{url}' target='_blank'>{url}</a><br>"
+            )
         html_lines.append("</div>")
 
         html_content = "".join(html_lines)
-
         try:
-            send_email(user.email, subject, html_content)
-            print(f"下單 email 發送成功!: {user.email}", file=sys.stderr)
+            from utils.send_email import send_email  # 避免循環 import
+            #send_email(email, subject, html_content)
+            if is_guest:
+                print("訪客查詢訂單網址",url)
+            print(f"下單 email 發送成功!: {email}", file=sys.stderr)
         except Exception as e:
-            print(f"下單 email 發送失敗: {user.email}, error: {e}", file=sys.stderr)
+            print(f"下單 email 發送失敗: {email}, error: {e}", file=sys.stderr)
+
 
 def send_email_notify_user_order_status(order):
     user = order.user
-    if user and user.email:
+    is_guest = not bool(user)
+    if user:
+        email = user.email
+    else:
+        email = order.guest_email
+
+    if email:
         subject = f"您在Nerd.com的訂單狀態已更新為「{order.status}」"
-        html_content = (
+        html_lines = [
             f"您好，<br>"
             f"您的訂單（編號：{order.id}）狀態已更新為：<b>{order.status}</b>。<br>"
             f"訂單總金額：{float(order.total):.2f} 元<br>"
             f"訂單日期：{order.order_date.strftime('%Y-%m-%d %H:%M') if order.order_date else ''}<br>"
             f"<hr>"
             f"您可以登入會員中心查詢訂單詳情。"
-        )
+        ]
+        # 新增：訪客給訂單明細查詢連結
+        if is_guest:
+            base_url = get_current_config().FRONTEND_BASE_URL.rstrip('/') + "/guest-order-detail"
+            email_encoded = urllib.parse.quote(email, safe='')  # 把 email encode 成網址可用格式
+            url = f"{base_url}?guest_id={order.guest_id}&order_id={order.id}&email={email_encoded}"
+            html_lines.append(
+                f"👉 您可隨時查詢訂單明細：<a href='{url}' target='_blank'>{url}</a><br>"
+            )
+        html_content = "".join(html_lines)
         try:
             from utils.send_email import send_email   # 避免循環 import
-            send_email(user.email, subject, html_content)
+            #send_email(email, subject, html_content)
+            if is_guest:
+                print("訪客查詢訂單網址",url)
         except Exception as e:
-            print(f"訂單狀態 email 寄送失敗：{user.email}, error: {e}")
+            print(f"訂單狀態 email 寄送失敗：{email}, error: {e}")
 
 def send_email_notify_users_cart_product_on_sale(product_id, discount, start_date, end_date, description):
     """
-    傳送email 通知給用戶 購物車的東西正在特價
+    傳送email 通知給用戶(訪客不會) 購物車的東西正在特價
     """
     cart_items = CartItem.query.filter_by(product_id=product_id).all()
     notified_user_ids = set()
@@ -100,7 +126,6 @@ def send_email_notify_users_cart_product_on_sale(product_id, discount, start_dat
             user = cart.user
             if user and user.email and user.id not in notified_user_ids:
                 subject = f"您在Nerd.com購物車內的「{product.title}」開始特價囉！"
-                
                 html_content = (
                     f"您好，您Nerd.com購物車中的商品 <b>{product.title}</b> 現正特價！<br>"
                     f"原價：<s>{float(product.price)}</s> 元<br>"

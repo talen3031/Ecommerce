@@ -3,11 +3,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db, Cart
 from datetime import datetime
 from service.cart_service import CartService
-from service.audit_service import AuditService
 from service.product_service import ProductService 
 from service.discount_service import DiscountService
 carts_bp = Blueprint('carts', __name__, url_prefix='/carts')
-#查詢購物車
+#用戶查詢購物車
 @carts_bp.route('/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_cart(user_id):
@@ -76,7 +75,8 @@ def get_cart(user_id):
         return jsonify({"cart": None, "items": []})
     return jsonify(cart)
 
-#加入商品至購物車
+
+#用戶加入商品至購物車
 @carts_bp.route('/<int:user_id>', methods=['POST'])
 @jwt_required()
 def add_to_cart(user_id):
@@ -143,13 +143,6 @@ def add_to_cart(user_id):
     cart_item = CartService.add_to_cart(user_id=user_id, product_id=product_id, quantity=quantity)
     
     
-    AuditService.log(
-        user_id=user_id,
-        action='add',
-        target_type='cart_item',
-        target_id=cart_item.cart_id,
-        description=f"add prodcut{product_id} quantity: {quantity} to cart{cart_item.cart_id}"
-    )
     return jsonify({"message": "Added to cart", "cart_id": cart_item.cart_id})
 
 
@@ -228,13 +221,6 @@ def remove_from_cart(user_id):
 
     cart_item = CartService.remove_from_cart(user_id=user_id, product_id=product_id)
      
-    AuditService.log(
-        user_id=current_user,
-        action='delete',
-        target_type='cart_item',
-        target_id=cart_item.id,
-        description=f"Delete product_id={product_id} from cart_id={cart_item.cart_id}"
-    )
     return jsonify({"message": "Removed product from cart", "cart_id": cart_item.cart_id}), 200
 
     
@@ -324,13 +310,7 @@ def update_cart_item(user_id):
 
     cart_item ,old_qty= CartService.update_cart_item(user_id=user_id, product_id=product_id, quantity=quantity)
     
-    AuditService.log(
-        user_id=current_user,
-        action='update',
-        target_type='cart_item',
-        target_id=cart_item.id,
-        description=f"product_id={product_id}, cart_id={cart_item.cart_id}, qty {old_qty} -> {quantity}"
-    )
+    
     return jsonify({"message": f"Updated product quantity {old_qty} -> {quantity} in cart{cart_item.cart_id}"}), 200
 
 # 結帳
@@ -416,6 +396,10 @@ def checkout_cart(user_id):
     items_to_checkout = data.get("items")
     discount_code = data.get("discount_code")
     shipping_info = data.get("shipping_info")
+    
+    #shipping_info is necessary!
+    if not shipping_info :
+        return jsonify({"error": "shipping_info is empty"}), 400
     # 若傳入'all' or 'ALL'
     if isinstance(items_to_checkout, str) and items_to_checkout.lower() == "all":
         cart = CartService.get_cart(user_id=user_id)
@@ -438,14 +422,7 @@ def checkout_cart(user_id):
     # 執行結帳
     result = CartService.checkout_cart(user_id=user_id, items_to_checkout=items_to_checkout,discount_code=discount_code ,shipping_info=shipping_info)
     
-    # 日誌寫入
-    AuditService.log(
-        user_id=current_user,
-        action='checkout',  # 建議用 'checkout'
-        target_type='order',
-        target_id = result["order_id"],
-        description = f"Checkout order_id={result['order_id']}, total={result['total']}, items={items_to_checkout}"
-    )
+    
     return jsonify(result), 200
 
 @carts_bp.route('/<int:user_id>/recommend', methods=['GET'])
@@ -625,7 +602,100 @@ def apply_discount(user_id):
     if not cart or not cart.cart_items:
         return jsonify({"error": "購物車為空"}), 400
 
-    ok, msg, dc, discounted_total, discount_amount, rule_msg ,used_coupon= DiscountService.apply_discount_code(user_id, cart, code)
+    ok, msg, dc, discounted_total, discount_amount, rule_msg ,used_coupon =  DiscountService.apply_discount_code(user_id=user_id, cart=cart, code=code)
+    return jsonify({
+        "success": ok,
+        "message": msg,
+        "discounted_total": discounted_total,
+        "discount_amount": discount_amount,
+        "rule_msg": rule_msg,
+        "discount_code": dc.to_dict() if dc else None,
+        "used_coupon": used_coupon,
+    })
+
+
+# 查詢訪客購物車
+@carts_bp.route('/guest/<string:guest_id>', methods=['GET'])
+def get_cart_guest(guest_id):
+    cart = CartService.get_cart(guest_id=guest_id)
+    if not cart:
+        return jsonify({"cart": None, "items": []})
+    return jsonify(cart)
+
+# 加入商品至訪客購物車
+@carts_bp.route('/guest/<string:guest_id>', methods=['POST'])
+def add_to_cart_guest(guest_id):
+    data = request.json
+    product_id = data.get("product_id")
+    quantity = data.get("quantity", 1)
+    if not product_id:
+        return jsonify({"error": "Missing product_id"}), 400
+    cart_item = CartService.add_to_cart(guest_id=guest_id, product_id=product_id, quantity=quantity)
+    return jsonify({"message": "Added to cart", "cart_id": cart_item.cart_id})
+
+# 移除商品
+@carts_bp.route('/guest/<string:guest_id>', methods=['DELETE'])
+def remove_from_cart_guest(guest_id):
+    data = request.json
+    product_id = data.get("product_id")
+    if not product_id:
+        return jsonify({"error": "Missing product_id"}), 400
+    cart_item = CartService.remove_from_cart(guest_id=guest_id, product_id=product_id)
+    return jsonify({"message": "Removed product from cart", "cart_id": cart_item.cart_id}), 200
+
+# 訪客調整商品數量
+@carts_bp.route('/guest/<string:guest_id>', methods=['PUT'])
+def update_cart_item_guest(guest_id):
+    data = request.json
+    product_id = data.get("product_id")
+    quantity = data.get("quantity")
+    if not product_id or quantity is None:
+        return jsonify({"error": "Missing product_id or quantity"}), 400
+    cart_item, old_qty = CartService.update_cart_item(guest_id=guest_id, product_id=product_id, quantity=quantity)
+    return jsonify({"message": f"Updated product quantity {old_qty} -> {quantity} in cart {cart_item.cart_id}"}), 200
+
+# 訪客結帳
+@carts_bp.route('/guest/<string:guest_id>/checkout', methods=['POST'])
+def checkout_cart_guest(guest_id):
+    data = request.json or {}
+    items_to_checkout = data.get("items")
+    discount_code = data.get("discount_code")
+    shipping_info = data.get("shipping_info")
+    if not shipping_info:
+        return jsonify({"error": "shipping_info is empty"}), 400
+    if isinstance(items_to_checkout, str) and items_to_checkout.lower() == "all":
+        cart = CartService.get_cart(guest_id=guest_id)
+        if not cart or not cart.get("items"):
+            return jsonify({"error": "Cart is empty"}), 400
+        items_to_checkout = [
+            {"product_id": item["product_id"], "quantity": item["quantity"]}
+            for item in cart["items"]
+        ]
+        if not items_to_checkout:
+            return jsonify({"error": "Cart is empty"}), 400
+    if not items_to_checkout or not isinstance(items_to_checkout, list):
+        return jsonify({"error": "Please provide items to checkout or enter 'all'"}), 400
+    if len(items_to_checkout) == 0:
+        return jsonify({"error": "Cart is empty"}), 400
+    result = CartService.checkout_cart(guest_id=guest_id, items_to_checkout=items_to_checkout,
+                                       discount_code=discount_code, shipping_info=shipping_info)
+    return jsonify(result), 200
+
+# 套用折扣碼
+@carts_bp.route('/guest/<string:guest_id>/apply_discount', methods=['POST'])
+def apply_discount_guest(guest_id):
+    code = request.json.get("code")
+    if not code:
+        return jsonify({"error": "請輸入折扣碼"}), 400
+
+    # 取得原始 ORM 物件
+    cart = Cart.query.filter_by(guest_id=guest_id, status='active').order_by(Cart.created_at.desc()).first()
+    if not cart or not cart.cart_items:
+        return jsonify({"error": "購物車為空"}), 400
+
+    ok, msg, dc, discounted_total, discount_amount, rule_msg, used_coupon = \
+        DiscountService.apply_discount_code(guest_id=guest_id, cart=cart, code=code)
+    
     return jsonify({
         "success": ok,
         "message": msg,

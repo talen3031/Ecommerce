@@ -35,6 +35,8 @@ CREATE TYPE order_status_enum AS ENUM (
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
+    guest_id VARCHAR(64) NULL,
+    guest_email VARCHAR(255) NULL,
     order_date TIMESTAMP,
     total NUMERIC,
     status order_status_enum NOT NULL DEFAULT 'pending',
@@ -55,6 +57,7 @@ CREATE TYPE cart_status_enum AS ENUM ('active', 'checked_out');
 CREATE TABLE carts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
+    guest_id VARCHAR(64) NULL,
     created_at TIMESTAMP,
     status cart_status_enum NOT NULL DEFAULT 'active'
 );
@@ -70,6 +73,7 @@ CREATE TABLE cart_items (
 CREATE TABLE audit_logs (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
+    guest_id VARCHAR(64) NULL,
     action VARCHAR(50) NOT NULL,
     target_type VARCHAR(50) NOT NULL,
     target_id INTEGER,
@@ -114,6 +118,7 @@ CREATE TABLE discount_codes (
 CREATE TABLE user_discount_codes (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) NOT NULL,
+    guest_id VARCHAR(64) NULL,
     discount_code_id INTEGER REFERENCES discount_codes(id) NOT NULL,
     used_count INTEGER DEFAULT 0,
     last_used_at TIMESTAMP DEFAULT now()

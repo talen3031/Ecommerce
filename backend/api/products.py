@@ -174,6 +174,7 @@ def get_product(product_id):
 
 # 新增商品
 @products_bp.route('', methods=['POST'])
+@jwt_required()
 @admin_required
 def create_product():
     """
@@ -267,6 +268,7 @@ def create_product():
 
 # 修改商品（全部覆蓋）
 @products_bp.route('/<int:product_id>', methods=['PUT'])
+@jwt_required()
 @admin_required
 def update_product(product_id):
     """
@@ -364,6 +366,7 @@ def update_product(product_id):
 
 # 刪除商品
 @products_bp.route('/<int:product_id>', methods=['DELETE'])
+@jwt_required()
 @admin_required
 def delete_product(product_id):
     """
@@ -412,6 +415,7 @@ def delete_product(product_id):
     return jsonify({"message": "Product deleted", "product_id": product.id})
 
 @products_bp.route('/sale/<int:product_id>', methods=['POST'])
+@jwt_required()
 @admin_required
 def add_product_sale(product_id):
     """

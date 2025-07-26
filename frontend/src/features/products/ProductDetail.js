@@ -3,7 +3,7 @@ import { Card, Spin, message, Button, InputNumber, Row, Modal, Col } from "antd"
 import api from "../../api/api";
 import { useNavigate, useParams } from "react-router-dom";
 import '../../styles/ProductDetail.css'
-
+import { getGuestId } from "../../api/api";
 const categoryMap = {
   1: "褲子",
   2: "帽子",
@@ -37,22 +37,27 @@ function ProductDetail() {
   }, [productId]);
 
   const handleAddToCart = async () => {
-    const userId = localStorage.getItem("user_id");
-    if (!userId) {
-      message.error("請先登入");
-      return;
-    }
-    setCartLoading(true);
-    try {
+  const userId = localStorage.getItem("user_id");
+  const guestId = getGuestId();
+  setCartLoading(true);
+  try {
+    if (userId) {
       await api.post(`/carts/${userId}`, {
         product_id: productId,
         quantity: quantity
       });
       message.success("已加入購物車！");
-    } catch (err) {
-      message.error("加入購物車失敗：" + (err.response?.data?.error || err.message));
+    } else {
+      await api.post(`/carts/guest/${guestId}`, {
+        product_id: productId,
+        quantity: quantity
+      });
+      message.success("已加入購物車！（訪客購物車）");
     }
-    setCartLoading(false);
+  } catch (err) {
+    message.error("加入購物車失敗：" + (err.response?.data?.error || err.message));
+  }
+  setCartLoading(false);
   };
 
   if (!productId) return null;

@@ -6,6 +6,7 @@ import secrets
 
 from datetime import datetime, timedelta
 from utils.send_email import send_email
+from config import get_current_config
 
 class UserService:
     @staticmethod
@@ -63,8 +64,8 @@ class UserService:
         db.session.add(reset_token)
         db.session.commit()
         # 發送重設信
-        #reset_link = f"http://localhost:3000/reset_password?token={token}"
-        reset_link = f"https://ecommerce-frontend-latest.onrender.com/reset_password?token={token}"
+        base_url = get_current_config().FRONTEND_BASE_URL
+        reset_link = f"{base_url.rstrip('/')}/reset_password?token={token}"
         user = User.get_by_user_id(user_id)
         
         if user and user.email:

@@ -101,7 +101,6 @@ class Product(db.Model):
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    #username = db.Column(db.String(100), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False)
     full_name = db.Column(db.String(255))
@@ -150,6 +149,8 @@ class Order(db.Model):
     __tablename__ = 'orders'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    guest_id = db.Column(db.String(64), nullable=True)  # 訪客唯一識別
+    guest_email = db.Column(db.String(255)) #若訪客模式下單才需要填寫 若已登入則不需要         
     order_date = db.Column(db.DateTime)
     total = db.Column(db.Numeric)
     status = db.Column(Enum(*ORDER_STATUS, name="order_status_enum"), default='pending', nullable=False)
@@ -214,6 +215,7 @@ class Cart(db.Model):
     __tablename__ = 'carts'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    guest_id = db.Column(db.String(64), nullable=True)   # <--- 新增
     created_at = db.Column(db.DateTime)
     status = db.Column(Enum(*CART_STATUS, name="cart_status_enum"), default='active', nullable=False)
     user = db.relationship('User', backref=db.backref('carts', lazy=True))
@@ -249,7 +251,8 @@ class AuditLog(db.Model):
     __tablename__ = 'audit_logs'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    action = db.Column(db.String(50), nullable=False) # 'add', 'delete', 'update'
+    guest_id = db.Column(db.String(64), nullable=True)
+    action = db.Column(db.String(50), nullable=False) 
     target_type = db.Column(db.String(50), nullable=False) # 'product', 'user', ...
     target_id = db.Column(db.Integer, nullable=True) # ex: product_id
     description = db.Column(db.Text)
@@ -363,14 +366,12 @@ class DiscountCode(db.Model):
 class UserDiscountCode(db.Model):
     __tablename__ = "user_discount_codes"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    guest_id = db.Column(db.String(64), nullable=True)  # 新增這行
     discount_code_id = db.Column(db.Integer, db.ForeignKey('discount_codes.id'), nullable=False)
     used_count = db.Column(db.Integer, default=0)
     last_used_at = db.Column(db.DateTime, default=datetime.now)
 
-    user = db.relationship('User', backref=db.backref('used_discount_codes', lazy=True))
-    discount_code = db.relationship('DiscountCode', backref=db.backref('user_usages', lazy=True))
-    
 class OrderShipping(db.Model):
     __tablename__ = 'order_shipping'
     id = db.Column(db.Integer, primary_key=True)
@@ -378,7 +379,7 @@ class OrderShipping(db.Model):
     shipping_method = db.Column(db.String(30), nullable=False)     # '711', 'familymart'
     recipient_name = db.Column(db.String(100), nullable=False)
     recipient_phone = db.Column(db.String(30), nullable=False)
-    store_name = db.Column(db.String(100), nullable=False)         # 取貨門市店名或代碼
+    store_name = db.Column(db.String(100), nullable=False)   # 取貨門市店名或代碼
 
     order = db.relationship('Order', backref=db.backref('shipping', uselist=False))
 

@@ -59,6 +59,7 @@ def create_discount_code():
         return jsonify({"error": str(e)}), 400
 
     return jsonify(dc.to_dict()), 201
+
 @discount_bp.route('/', methods=['GET'])
 @jwt_required()
 @admin_required
@@ -106,6 +107,6 @@ def deactivate_discount_code(code_id):
     code = DiscountCode.query.get(code_id)
     if not code:
         return jsonify({"error": "折扣碼不存在"}), 404
-    DiscountService.deactivate_discount_code(code)
+    code = DiscountService.deactivate_discount_code(code)
   
     return jsonify(code.to_dict()), 200

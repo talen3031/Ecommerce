@@ -6,7 +6,22 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from app import create_app
 from models import Product, db, Order, OrderItem,Category,User
 from datetime import datetime
+import uuid
+import pytest
 
+@pytest.fixture
+def guest_id():
+    # 模擬一組訪客 id (uuid 字串)
+    return str(uuid.uuid4())
+@pytest.fixture
+def shipping_info():
+    return {
+        "shipping_method": "711",
+        "recipient_name": "測試用戶",
+        "recipient_phone": "0912345678",
+        "recipient_email": "user1@mail.com",
+        "store_name": "7-11 測試店"
+    }
 @pytest.fixture(autouse=True)
 def setup_products(app):
     # 建立預設分類和商品，確保有 id=1
@@ -82,7 +97,7 @@ def test_cart_crud_flow(client, user_token_and_id):
     res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
     assert res.get_json()['items'] == []
 
-def test_cart_checkout(client, user_token_and_id):
+def test_cart_checkout(client, user_token_and_id,shipping_info):
     token, user_id = user_token_and_id
 
     # 先加商品
@@ -95,8 +110,10 @@ def test_cart_checkout(client, user_token_and_id):
 
     # 正常結帳
     res = client.post(f'/carts/{user_id}/checkout',
-                      json={'items': [{'product_id': 1, 'quantity': 2}]},
-                      headers={'Authorization': f'Bearer {token}'})
+                       json={
+                            'items': [{'product_id': 1, 'quantity': 2}],
+                            'shipping_info':shipping_info
+                        },headers={'Authorization': f'Bearer {token}'})
     print("Checkout resp：", res.status_code, res.get_json())
     assert res.status_code == 200
     assert 'order_id' in res.get_json()
@@ -159,14 +176,13 @@ def test_cart_collaborative_recommend(client, user_token_and_id):
     data = res.get_json()
     assert any(p['title'] == collab_title for p in data)
 
-def test_discount_code_checkout_flow(client, user_token_and_id, discount_code):
+def test_discount_code_checkout_flow(client, user_token_and_id, discount_code,shipping_info):
     token, user_id = user_token_and_id
 
     # 1. 先加商品到購物車
-    res = client.post(
-        f'/carts/{user_id}', 
-        json={'product_id': 1, 'quantity': 2},
-        headers={'Authorization': f'Bearer {token}'}
+    res = client.post(f'/carts/{user_id}',
+    json={'product_id': 1, 'quantity': 2},
+    headers={'Authorization': f'Bearer {token}'}
     )
     assert res.status_code == 200
 
@@ -188,12 +204,13 @@ def test_discount_code_checkout_flow(client, user_token_and_id, discount_code):
 
     # 3. 直接用折扣碼結帳
     res = client.post(
-        f'/carts/{user_id}/checkout',
-        json={
-            'items': [{'product_id': 1, 'quantity': 2}],
-            'discount_code': discount_code.code
-        },
-        headers={'Authorization': f'Bearer {token}'}
+    f'/carts/{user_id}/checkout',
+    json={
+        'items': [{'product_id': 1, 'quantity': 2}],
+        'discount_code': discount_code.code,
+        'shipping_info': shipping_info         
+    },
+    headers={'Authorization': f'Bearer {token}'}
     )
     print("折扣碼 checkout resp:", res.status_code, res.get_json())
     assert res.status_code == 200
@@ -208,7 +225,7 @@ def test_discount_code_checkout_flow(client, user_token_and_id, discount_code):
     print("折扣碼 checkout 後購物車：", res.status_code, res.get_json())
     assert res.get_json()['items'] == []
     
-def test_product_specific_discount_code_and_sale(client, user_token_and_id):
+def test_product_specific_discount_code_and_sale(client, user_token_and_id,shipping_info):
     """
     商品專屬折扣碼 + 商品有特價，應只擇一（取最優惠），不能疊加
     例：原價$100，特價$80，折扣碼9折=$90，最終$80*2=160
@@ -257,13 +274,16 @@ def test_product_specific_discount_code_and_sale(client, user_token_and_id):
 
     # 6. 結帳驗證
     res = client.post(f'/carts/{user_id}/checkout',
-                      json={'items': [{'product_id': product.id, 'quantity': 2}], 'discount_code': code},
-                      headers={'Authorization': f'Bearer {token}'})
+                      json={'items': [{'product_id': product.id, 'quantity': 2}], 
+                        'shipping_info':shipping_info, 
+                        'discount_code': code},
+                        headers={'Authorization': f'Bearer {token}'})
     result = res.get_json()
+    print("Checkout 回傳：", result)
     assert result["total"] == 160
     assert result["discount_amount"] == 40
 
-def test_sitewide_discount_code_with_sale(client, user_token_and_id):
+def test_sitewide_discount_code_with_sale(client, user_token_and_id,shipping_info):
     """
     全站折扣碼 + 特價商品，可疊加（先特價再全單折扣）
     例：原價$100，特價$80，再9折=72，最終$72*2=144
@@ -312,13 +332,16 @@ def test_sitewide_discount_code_with_sale(client, user_token_and_id):
 
     # 6. 結帳驗證
     res = client.post(f'/carts/{user_id}/checkout',
-                      json={'items': [{'product_id': product.id, 'quantity': 2}], 'discount_code': code},
-                      headers={'Authorization': f'Bearer {token}'})
+                      json={'items': [{'product_id': product.id, 'quantity': 2}],
+                             'shipping_info':shipping_info, 
+                            'discount_code': code},
+                            headers={'Authorization': f'Bearer {token}'})
     result = res.get_json()
+    print("Checkout 回傳：", result)
     assert result["total"] == 144
     assert result["discount_amount"] == 16
 
-def test_cart_permission(client, user_token_and_id):
+def test_cart_permission(client, user_token_and_id,shipping_info):
     token1, user1 = user_token_and_id
     # 新增 user2
     client.post('/auth/register', json={'email': 'user2@example.com', 'password': 'pw'})
@@ -329,16 +352,21 @@ def test_cart_permission(client, user_token_and_id):
     res = client.get(f'/carts/{user1}', headers={'Authorization': f'Bearer {token2}'})
     assert res.status_code == 403
     # 用 user2 結帳 user1
-    res = client.post(f'/carts/{user1}/checkout', json={'items': [{'product_id': 1, 'quantity': 1}]}, headers={'Authorization': f'Bearer {token2}'})
+    res = client.post(f'/carts/{user1}/checkout', json={'items': [{'product_id': 1, 'quantity': 1}],
+                                                        'shipping_info': shipping_info
+                                                        }
+                      , headers={'Authorization': f'Bearer {token2}'})
     assert res.status_code == 403
 
-def test_cart_unauthorized(client, user_token_and_id):
+def test_cart_unauthorized(client, user_token_and_id,shipping_info):
     _, user_id = user_token_and_id
     # 沒 token 查購物車
     res = client.get(f'/carts/{user_id}')
     assert res.status_code == 401
     # 沒 token 結帳
-    res = client.post(f'/carts/{user_id}/checkout', json={'items': [{'product_id': 1, 'quantity': 1}]})
+    res = client.post(f'/carts/{user_id}/checkout', json={'items': [{'product_id': 1, 'quantity': 1}],
+                                                        'shipping_info': shipping_info
+                                                        })
     assert res.status_code == 401
 
 def test_cart_add_nonexistent_product(client, user_token_and_id):
@@ -352,13 +380,13 @@ def test_cart_update_invalid_quantity(client, user_token_and_id):
     res = client.put(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 0}, headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 400
 
-def test_cart_checkout_empty(client, user_token_and_id):
+def test_cart_checkout_empty(client, user_token_and_id,shipping_info):
     token, user_id = user_token_and_id
     # 空購物車結帳
-    res = client.post(f'/carts/{user_id}/checkout', json={'items': []}, headers={'Authorization': f'Bearer {token}'})
+    res = client.post(f'/carts/{user_id}/checkout', json={'items': [],'shipping_info': shipping_info}, headers={'Authorization': f'Bearer {token}'})
     assert res.status_code == 400
 
-def test_cart_discount_code_usage_limit(client, user_token_and_id, discount_code):
+def test_cart_discount_code_usage_limit(client, user_token_and_id, discount_code,shipping_info):
     token, user_id = user_token_and_id
     # 超過可用次數
     discount_code.per_user_limit = 1
@@ -368,7 +396,11 @@ def test_cart_discount_code_usage_limit(client, user_token_and_id, discount_code
     print("used_count before checkout:", udc.used_count if udc else "None")
     # 先用一次
     client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 1}, headers={'Authorization': f'Bearer {token}'})
-    client.post(f'/carts/{user_id}/checkout', json={'items': [{'product_id': 1, 'quantity': 1}], 'discount_code': discount_code.code}, headers={'Authorization': f'Bearer {token}'})
+    client.post(f'/carts/{user_id}/checkout',
+                json={'items': [{'product_id': 1, 'quantity': 1}],
+                        'shipping_info': shipping_info,
+                        'discount_code': discount_code.code}, 
+                headers={'Authorization': f'Bearer {token}'})
     udc = UserDiscountCode.query.filter_by(user_id=user_id, discount_code_id=discount_code.id).first()
     print("used_count after checkout:", udc.used_count if udc else "None")
     
@@ -382,7 +414,7 @@ def test_cart_discount_code_usage_limit(client, user_token_and_id, discount_code
     assert not res.get_json()['success']
     assert "可用次數上限" in res.get_json()['message']
     
-def test_cart_discount_code_usage_limit(client, user_token_and_id, discount_code):
+def test_cart_discount_code_usage_limit(client, user_token_and_id, discount_code,shipping_info):
     token, user_id = user_token_and_id
 
     # 保證測試乾淨：刪掉使用紀錄
@@ -401,7 +433,10 @@ def test_cart_discount_code_usage_limit(client, user_token_and_id, discount_code
     assert res1.get_json()['success'] is True
 
     # 3. 結帳
-    res2 = client.post(f'/carts/{user_id}/checkout', json={'items': [{'product_id': 1, 'quantity': 2}], 'discount_code': discount_code.code}, headers={'Authorization': f'Bearer {token}'})
+    res2 = client.post(f'/carts/{user_id}/checkout', json={'items': [{'product_id': 1, 'quantity': 2}],
+                                                           'shipping_info': shipping_info, 
+                                                           'discount_code': discount_code.code}, 
+                                                    headers={'Authorization': f'Bearer {token}'})
     assert res2.status_code == 200
 
     # 4. 第二次再用應該失敗
@@ -418,3 +453,76 @@ def test_cart_add_same_product_multiple_times(client, user_token_and_id):
     client.post(f'/carts/{user_id}', json={'product_id': 1, 'quantity': 2}, headers={'Authorization': f'Bearer {token}'})
     res = client.get(f'/carts/{user_id}', headers={'Authorization': f'Bearer {token}'})
     assert res.get_json()['items'][0]['quantity'] == 3
+
+#訪客CRUD流程
+def test_guest_cart_crud_flow(client, guest_id):
+    # 查詢空購物車
+    res = client.get(f'/carts/guest/{guest_id}')
+    assert res.status_code == 200
+    assert res.get_json()['items'] == []
+
+    # 加商品到購物車
+    res = client.post(f'/carts/guest/{guest_id}', json={'product_id': 1, 'quantity': 2})
+    assert res.status_code == 200
+    cart_id = res.get_json()['cart_id']
+
+    # 查詢購物車內容
+    res = client.get(f'/carts/guest/{guest_id}')
+    assert res.status_code == 200
+    items = res.get_json()['items']
+    assert len(items) == 1 and items[0]['product_id'] == 1 and items[0]['quantity'] == 2
+
+    # 調整商品數量
+    res = client.put(f'/carts/guest/{guest_id}', json={'product_id': 1, 'quantity': 5})
+    assert res.status_code == 200
+    res = client.get(f'/carts/guest/{guest_id}')
+    assert res.get_json()['items'][0]['quantity'] == 5
+
+    # 刪除商品
+    res = client.delete(f'/carts/guest/{guest_id}', json={'product_id': 1})
+    assert res.status_code == 200
+    res = client.get(f'/carts/guest/{guest_id}')
+    assert res.get_json()['items'] == []
+# 訪客結帳流程測試
+def test_guest_cart_checkout(client, guest_id):
+    # 先加商品
+    client.post(f'/carts/guest/{guest_id}', json={'product_id': 1, 'quantity': 2})
+
+    # 檢查購物車
+    res = client.get(f'/carts/guest/{guest_id}')
+    assert res.status_code == 200
+
+    # 訪客結帳
+    shipping_info = {
+        "shipping_method": "711",
+        "recipient_name": "訪客甲",
+        "recipient_phone": "0912345678",
+        "recipient_email": "guest1@mail.com",
+        "store_name": "7-11 測試店"
+    }
+    res = client.post(
+        f'/carts/guest/{guest_id}/checkout',
+        json={
+            'items': [{'product_id': 1, 'quantity': 2}],
+            'shipping_info': shipping_info
+        }
+    )
+    assert res.status_code == 200
+    assert 'order_id' in res.get_json()
+
+    # 結帳後購物車應為空
+    res = client.get(f'/carts/guest/{guest_id}')
+    assert res.get_json()['items'] == []
+#訪客錯誤防呆測試
+def test_guest_cart_add_nonexistent_product(client, guest_id):
+    res = client.post(f'/carts/guest/{guest_id}', json={'product_id': 99999, 'quantity': 1})
+    assert res.status_code in (400, 404)
+
+def test_guest_cart_update_invalid_quantity(client, guest_id):
+    client.post(f'/carts/guest/{guest_id}', json={'product_id': 1, 'quantity': 1})
+    res = client.put(f'/carts/guest/{guest_id}', json={'product_id': 1, 'quantity': 0})
+    assert res.status_code == 400
+
+def test_guest_cart_checkout_empty(client, guest_id):
+    res = client.post(f'/carts/guest/{guest_id}/checkout', json={'items': []})
+    assert res.status_code == 400
