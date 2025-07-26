@@ -46,8 +46,10 @@ class DevelopmentConfig(BaseConfig):
     BACKEND_BASE_URL = "http://localhost:5000"
 class ProductionConfig(BaseConfig):
     DEBUG = False
-    FRONTEND_BASE_URL = "https://ecommerce-frontend-latest.onrender.com/"
-    BACKEND_BASE_URL = "https://ecommerce-backend-latest-6fr5.onrender.com/"
+    #FRONTEND_BASE_URL = "https://ecommerce-frontend-latest.onrender.com/"
+    #BACKEND_BASE_URL = "https://ecommerce-backend-latest-6fr5.onrender.com/"
+    FRONTEND_BASE_URL = "https://ecommerce-frontend-production-d012.up.railway.app/"
+    BACKEND_BASE_URL = "https://ecommerce-backend-production-83d4.up.railway.app/"
 class TestingConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI_TEST", "postgresql://postgres:talen168168@localhost:5432/Ecommerce_test")

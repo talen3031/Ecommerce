@@ -1,5 +1,4 @@
-from dotenv import load_dotenv
-load_dotenv()
+
 from flask import Flask, jsonify
 from models import db
 from api.products import products_bp
@@ -40,7 +39,7 @@ def create_app(config_name=None, test_config=None):
     app = Flask(__name__)
 
     # 1. 載入 config（優先以參數/環境變數決定環境）
-    config_name = config_name or os.getenv('FLASK_ENV', 'default')
+    config_name = config_name or os.getenv('APP_CONFIG') or os.getenv('FLASK_ENV', 'default')
     app.config.from_object(config[config_name])
     print("Current config:", config_name)
     # 2. CORS
@@ -49,7 +48,7 @@ def create_app(config_name=None, test_config=None):
         supports_credentials=True,
         origins=[
             "http://localhost:3000",
-            "https://ecommerce-frontend-latest.onrender.com"
+            "https://ecommerce-frontend-production-d012.up.railway.app"
         ]
     )
     # Cloudinary 初始化（只做一次）
