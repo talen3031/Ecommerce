@@ -21,6 +21,7 @@ def send_email_notify_order_created(order):
         items_html = ""
         for item in order.order_items:
             img_url = item.product.images[0] if item.product.images and len(item.product.images) > 0 else None
+            print(img_url)
             items_html += (
                 "<div style='margin-bottom:16px; color:#111;'>"
                 f"<span style='font-size:16px; color:#111; font-weight:600;'>{item.product.title}</span>"

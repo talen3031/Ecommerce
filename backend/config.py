@@ -63,6 +63,5 @@ config = {
 }
 
 def get_current_config():
-    import os
-    config_name = os.getenv("FLASK_ENV", "default")
+    config_name = config_name or os.getenv('APP_CONFIG') or os.getenv('FLASK_ENV', 'default')
     return config[config_name]
