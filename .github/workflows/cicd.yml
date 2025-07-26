@@ -83,4 +83,4 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/ecommerce-frontend:latest
           build-args: |
-            REACT_APP_API_URL=${{ secrets.FRONTEND_API_URL }}
+            REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}
