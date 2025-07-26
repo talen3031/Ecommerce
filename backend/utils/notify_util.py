@@ -68,7 +68,7 @@ def send_email_notify_order_created(order):
         html_content = "".join(html_lines)
         try:
             from utils.send_email import send_email  # 避免循環 import
-            #send_email(email, subject, html_content)
+            send_email(email, subject, html_content)
             if is_guest:
                 print("訪客查詢訂單網址",url)
             print(f"下單 email 發送成功!: {email}", file=sys.stderr)
@@ -105,7 +105,7 @@ def send_email_notify_user_order_status(order):
         html_content = "".join(html_lines)
         try:
             from utils.send_email import send_email   # 避免循環 import
-            #send_email(email, subject, html_content)
+            send_email(email, subject, html_content)
             if is_guest:
                 print("訪客查詢訂單網址",url)
         except Exception as e:
