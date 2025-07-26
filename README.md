@@ -3,11 +3,11 @@
 ## 專案總覽
 
 本專案是一個**全端電商平台Nerd.com**，涵蓋後端 API、前端網站、用戶通知、資料庫、CI/CD、第三方服務整合與推薦系統等多種功能。  
-後端以 **Python Flask + PostgreSQL** 開發，前端採用 **React.js**，並已部署於 Render。
+後端以 **Python Flask + PostgreSQL** 開發，前端採用 **React.js**，並已部署於 Railway
 
-- [Nerd.com](https://ecommerce-frontend-latest.onrender.com)
-- [後端 API（Swagger 文件）](https://ecommerce-backend-latest-6fr5.onrender.com/apidocs/)
-> 免費 Render Web Service 會在 15 分鐘無人使用時自動休眠，喚醒需 10~60 秒，請耐心等候。
+- [Nerd.com](https://ecommerce-frontend-production-d012.up.railway.app/)
+- [後端 API（Swagger 文件）](https://ecommerce-backend-production-83d4.up.railway.app/apidocs/)
+
 
 ---
 ## Requirement
@@ -84,7 +84,7 @@
 - **前端**：React.js / Ant Design / Axios
 - **測試**：pytest
 - **DevOps**：Docker  / GitHub Actions / Docker Hub
-- **雲端整合**：Render（主機及資料庫部署）、SendGrid（Email）、Cloudinary（圖片上傳）、LINE Messaging API（綁定後可即時通知）
+- **雲端整合**：Railway（主機及資料庫部署）、SendGrid（Email）、Cloudinary（圖片上傳）、LINE Messaging API（綁定後可即時通知）
 
 ---
 
@@ -134,7 +134,7 @@
 
 ### 9. Swagger API 文件
 - 內建 `/apidocs/` 提供全 API 自動文件，可直接線上測試
-- https://ecommerce-backend-latest-6fr5.onrender.com/apidocs/
+- https://ecommerce-backend-production-83d4.up.railway.app/apidocs/
 
 ### 10. CI/CD 與 Docker
 - 開發、測試、部署全自動化，CI 通過後自動 build/push 至 Docker Hub
