@@ -15,3 +15,4 @@ google-auth
 line-bot-sdk
 resend
 sendgrid
+flask_socketio
