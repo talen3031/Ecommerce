@@ -3,7 +3,12 @@ FROM node:20 AS build
 WORKDIR /app
 COPY . .
 ARG REACT_APP_API_URL
-RUN echo "REACT_APP_API_URL=$REACT_APP_API_URL" > .env
+ARG REACT_APP_SOCKET_URL
+
+# 建立 .env 檔，讓 React 編譯能抓到
+RUN echo "REACT_APP_API_URL=$REACT_APP_API_URL" > .env && \
+    echo "REACT_APP_SOCKET_URL=$REACT_APP_SOCKET_URL" >> .env
+
 RUN npm install
 RUN npm run build
 
