@@ -29,6 +29,7 @@ def push_flex_message(user_id, flex_content, alt_text="商品列表"):
     except Exception as e:
         print("Line推播失敗(Flex):", e)
         return False
+    
 def build_product_list_flex(products):
     """給定商品清單（list of ORM/dict），組成 Flex carousel"""
     bubbles = []
@@ -40,7 +41,7 @@ def build_product_list_flex(products):
         title = prod.title if hasattr(prod,"title") else prod.get("title", "")
         price = float(prod.price if hasattr(prod,'price') else prod.get('price', 0))
         desc = prod.description if hasattr(prod,"description") else prod.get("description", "")
-        desc = str(desc) if desc is not None else ""
+        desc = str(desc).strip() if desc else "無描述"
         bubble = {
             "type": "bubble",
             "hero": {
@@ -67,6 +68,7 @@ def build_product_list_flex(products):
         "type": "carousel",
         "contents": bubbles[:12]
     }
+
 
 def build_order_detail_flex(order):
     """

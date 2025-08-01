@@ -42,6 +42,7 @@ class DevelopmentConfig(BaseConfig):
     DEBUG = True
     # 可以自行選擇用哪個資料庫（local時）
     SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI_LOCALHOST", "postgresql://postgres:talen168168@localhost:5432/Ecommerce")
+
     FRONTEND_BASE_URL = "http://localhost:3000"
     BACKEND_BASE_URL = "http://localhost:5000"
 
