@@ -16,3 +16,4 @@ line-bot-sdk
 resend
 sendgrid
 flask_socketio
+eventlet

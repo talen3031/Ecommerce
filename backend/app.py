@@ -62,7 +62,7 @@ def create_app(config_name=None, test_config=None):
         print(f"FRONTEND_BASE_URL: {getattr(CurrentConfig, 'FRONTEND_BASE_URL', None)}")
         print(f"BACKEND_BASE_URL: {getattr(CurrentConfig, 'BACKEND_BASE_URL', None)}")
         print(f"DATABASE URI: {getattr(CurrentConfig, 'SQLALCHEMY_DATABASE_URI', None)}")
-        print(f"DATABASE URI: {getattr(CurrentConfig, 'DEBUG', None)}")
+        print(f"DEBUG: {getattr(CurrentConfig, 'DEBUG', None)}")
         print("===================================")
 
     print_startup_config()
