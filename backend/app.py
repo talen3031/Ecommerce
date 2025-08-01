@@ -144,8 +144,8 @@ def create_app(config_name=None, test_config=None):
         return "Nerd.com API is running!"
 
     return app
+app = create_app() 
+
 # 本地啟動
 if __name__ == '__main__':
-    app = create_app()
     socketio.run(app, host="0.0.0.0", port=5000)
-app = create_app() 
