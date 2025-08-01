@@ -59,7 +59,7 @@ class DiscountService:
         # 檢查有效期限
         if dc.valid_from > now or dc.valid_to < now:
             return False, "折扣碼不在有效期限", None, None, None, "", False
-
+        
         # 查詢該用戶或訪客的折扣碼使用次數
         user_dc = None
         if user_id:

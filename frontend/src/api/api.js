@@ -1,4 +1,5 @@
 import axios from "axios";
+import { API_BASE_URL } from "../config"; // << 新增
 
 function getGuestId() {
   let guestId = localStorage.getItem("guest_id");
@@ -15,8 +16,9 @@ export { getGuestId };
 
 
 const api = axios.create({
-  //baseURL: "http://localhost:5000",
-  baseURL: process.env.REACT_APP_API_URL,
+  baseURL: API_BASE_URL,
+  
+  //baseURL: process.env.REACT_APP_API_URL,
   withCredentials: true, // 全部請求都自動帶 cookie（可選，也可只在 /auth/refresh 加）
 });
 

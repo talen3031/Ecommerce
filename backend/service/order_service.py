@@ -244,6 +244,7 @@ class OrderService:
         )
         db.session.commit()
         return shipping
+    
     #admin only
     @staticmethod
     def update_shipping_info(order_id, data, operator_user_id=None):

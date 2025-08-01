@@ -552,3 +552,47 @@ def activate_product(product_id):
         description=f"Product {product_id} activated"
     )
     return jsonify({"message": f"Product{product.title} activated"})
+
+@products_bp.route('/guest/recommend', methods=['GET'])
+def recommend_for_guest():
+    """
+    未登入訪客推薦（回傳全站熱賣商品，按銷量排序）
+    ---
+    tags:
+      - users
+    parameters:
+      - in: query
+        name: limit
+        type: integer
+        required: false
+        description: 推薦幾個商品，預設5
+    responses:
+      200:
+        description: 推薦商品列表
+        schema:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 1
+              title:
+                type: string
+                example: "iPhone 99"
+              price:
+                type: number
+                example: 9999
+              description:
+                type: string
+                example: "旗艦手機"
+              category_id:
+                type: integer
+                example: 1
+              image:
+                type: string
+                example: "http://img"
+    """
+    limit = request.args.get('limit', 5, type=int)
+    products = ProductService.get_top_products(limit=limit)
+    return jsonify([p.to_dict() for p in products])

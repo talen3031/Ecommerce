@@ -146,3 +146,35 @@ def test_recommend_permission(client, new_user):
     # 未登入
     res = client.get(f'/users/{user1["user_id"]}/recommend')
     assert res.status_code == 401
+#測試補齊推薦商品的情境
+def test_recommend_for_user_auto_fill_with_hot_products(client, new_user, admin_token):
+    user = new_user("recomfill@example.com")
+    # 管理員新增三個商品
+    id_list = []
+    for title in ['A', 'B', 'C']:
+        r = client.post('/products',
+            json={'title': title, 'price': 100, 'category_id': 1},
+            headers={'Authorization': f'Bearer {admin_token}'})
+        id_list.append(r.get_json()['product_id'])
+
+    # 用戶只買 A
+    order = Order(user_id=user["user_id"])
+    db.session.add(order)
+    db.session.commit()
+    db.session.add(OrderItem(order_id=order.id, product_id=id_list[0], quantity=1, price=100))
+    db.session.commit()
+
+    # 呼叫推薦 API，limit 設大於個人化商品數
+    res = client.get(f'/users/{user["user_id"]}/recommend?limit=3', headers={'Authorization': f'Bearer {user["token"]}'})
+    assert res.status_code == 200
+    data = res.get_json()
+    
+    # 應該回傳三筆
+    assert len(data) == 3
+    # 應包含沒買過的 B、C（順序可根據你服務排序）
+    returned_titles = set(item['title'] for item in data)
+    assert 'A' in returned_titles
+    assert 'B' in returned_titles or 'C' in returned_titles
+
+    # 應不重複
+    assert len(returned_titles) == 3

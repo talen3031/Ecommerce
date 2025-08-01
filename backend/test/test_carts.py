@@ -9,6 +9,15 @@ from datetime import datetime
 import uuid
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def setup_products(app):
+    # 建立預設分類和商品，確保有 id=1
+    if not Category.query.filter_by(id=1).first():
+        db.session.add(Category(id=1, name='cat1', description='for test'))
+    db.session.add(Product(title='Test Product', price=100, description='desc', category_id=1, images=['img1','img2']))
+    db.session.commit()
+
 @pytest.fixture
 def guest_id():
     # 模擬一組訪客 id (uuid 字串)
@@ -22,13 +31,6 @@ def shipping_info():
         "recipient_email": "user1@mail.com",
         "store_name": "7-11 測試店"
     }
-@pytest.fixture(autouse=True)
-def setup_products(app):
-    # 建立預設分類和商品，確保有 id=1
-    if not Category.query.filter_by(id=1).first():
-        db.session.add(Category(id=1, name='cat1', description='for test'))
-    db.session.add(Product(title='Test Product', price=100, description='desc', category_id=1, images=['img1','img2']))
-    db.session.commit()
 
 @pytest.fixture
 def user_token_and_id(client):

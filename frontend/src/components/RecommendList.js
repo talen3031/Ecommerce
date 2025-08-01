@@ -19,7 +19,10 @@ function RecommendList({ userId, mode = "cart", limit = 5, onSelectProduct }) {
       url = `/carts/${userId}/recommend/collaborative?limit=${limit}`;
     } else if (mode === "user") {
       url = `/users/${userId}/recommend?limit=${limit}`;
+    } else if (mode === "guest") {
+       url = `/products/guest/recommend?limit=${limit}`;
     }
+
     api.get(url)
       .then(res => setProducts(res.data || []))
       .catch(() => message.error("推薦商品取得失敗"))

@@ -1,6 +1,7 @@
 from models import db, Product,ProductOnSale,OrderItem,Order,Cart,CartItem
 from exceptions import NotFoundError
 from datetime import datetime
+from sqlalchemy import func
 from utils import notify_util
 class ProductService:
     @staticmethod
@@ -108,7 +109,27 @@ class ProductService:
         notify_util.send_line_notify_users_cart_product_on_sale(product_id, discount, start_date, end_date, description)
         
         return sale
-
+    
+    @staticmethod
+    def get_top_products(limit=5):
+        """
+        取熱賣商品（依訂單明細被賣出數量排行）
+        """
+        # 依照 OrderItem 統計每個 product_id 的總銷售數量
+        hot_products = (
+            db.session.query(
+                Product,
+                func.coalesce(func.sum(OrderItem.quantity), 0).label("total_sold")
+            )
+            .outerjoin(OrderItem, Product.id == OrderItem.product_id)
+            .group_by(Product.id)
+            .order_by(func.sum(OrderItem.quantity).desc().nullslast())
+            .limit(limit)
+            .all()
+        )
+        # 取出 Product 物件
+        return [prod for prod, total in hot_products]
+    
     @staticmethod
     def recommend_for_user(user_id, limit=5):
         # 1. 直接查詢該用戶所有買過的商品id

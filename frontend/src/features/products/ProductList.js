@@ -28,7 +28,11 @@ function ProductList() {
   const [category, setCategory] = useState("");
 
   const navigate = useNavigate();
-
+   // 這段是新增的 ↓
+  const isLoggedIn = !!localStorage.getItem("user_id") && localStorage.getItem("role") === "user";
+  const userId = localStorage.getItem("user_id");
+  let guestId = localStorage.getItem("guest_id");
+  
   const fetchProducts = (page = 1, pageSize = 12) => {
     setLoading(true);
     let url = `/products?page=${page}&per_page=${pageSize}`;
@@ -418,11 +422,11 @@ function ProductList() {
             為你推薦
           </h2>
           <RecommendList
-            userId={localStorage.getItem("user_id")}
-            mode="user"
-            limit={6}
-            onSelectProduct={handleGoDetail}
-          />
+              userId={isLoggedIn ? userId : guestId}
+              mode={isLoggedIn ? "user" : "guest"}
+              limit={3}
+              onSelectProduct={handleGoDetail}
+            />
         </div>
       </div>
     </div>

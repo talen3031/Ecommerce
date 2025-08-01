@@ -123,3 +123,10 @@ CREATE TABLE user_discount_codes (
     used_count INTEGER DEFAULT 0,
     last_used_at TIMESTAMP DEFAULT now()
 );
+CREATE TABLE chat_messages (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    sender VARCHAR(20) NOT NULL,           -- 'user' 或 'admin'
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);

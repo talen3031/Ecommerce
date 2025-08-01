@@ -5,8 +5,7 @@ from models import db, User
 from utils.line_bot import push_message,push_flex_message
 from linebot.models import FlexSendMessage
 from config import get_current_config
-
-
+from utils.line_bot import push_message, push_flex_message
 linemessage_bp = Blueprint('linemessage', __name__, url_prefix='/linemessage')
 
 @linemessage_bp.route("/blinding")
@@ -82,6 +81,8 @@ def get_jwt_token_for_linebot():
     except Exception as e:
         print(f"取得 JWT token 失敗: {e}")
         return None
+    
+from utils.line_bot import build_order_detail_flex,build_order_list_flex ,build_product_list_flex # 路徑依你實際目錄
 @linemessage_bp.route("/webhook", methods=["POST"])
 def line_webhook():
     try:
@@ -90,7 +91,46 @@ def line_webhook():
         for event in events:
             if event.get("type") == "message" and event["message"].get("type") == "text":
                 line_user_id = event["source"]["userId"]
-                push_message(line_user_id, "你好")
+                msg = event["message"]["text"].strip()
+                user = User.query.filter_by(line_user_id=line_user_id).first()
+                if not user:
+                    push_message(line_user_id, "請先到會員中心綁定 LINE 帳號")
+                    continue
+                 # 推薦商品（個人化，不管有無都給5個）
+                if msg.startswith("推薦商品"):
+                    from service.product_service import ProductService
+                    recommend_limit = 5
+                    products = ProductService.recommend_for_user(user.id, recommend_limit)
+                    if not products or len(products) < recommend_limit:
+                        # 不夠就用熱門/最新補滿
+                        # 可以改成 get_top_products、get_products 等
+                        products = ProductService.get_top_products(limit=recommend_limit)
+                    flex_content = build_product_list_flex(products)
+                    push_flex_message(line_user_id, flex_content, alt_text="推薦商品")
+
+                # 歷史訂單列表
+                elif msg in ("查詢歷史訂單","查詢訂單", "查詢我的訂單",  "我的訂單", "查訂單紀錄"):
+                    from service.order_service import OrderService
+                    
+                    orders = OrderService.get_user_orders(user.id, page=1, per_page=5)
+                    if not orders.items:
+                        push_message(line_user_id, "目前沒有訂單紀錄")
+                        continue
+                    flex_content = build_order_list_flex(orders.items)
+                    push_flex_message(line_user_id, flex_content, alt_text="訂單列表")
+                # 單筆訂單明細
+                elif msg.startswith("查訂單明細#"):
+                    try:
+                        order_id = int(msg.split("#")[1])
+                        from service.order_service import OrderService
+                        # 直接查 dict 版本
+                        order_detail = OrderService.get_order_detail(order_id)
+                        flex_content = build_order_detail_flex(order_detail)
+                        push_flex_message(line_user_id, flex_content, alt_text="訂單明細")
+                    except Exception:
+                        push_message(line_user_id, "查詢訂單明細失敗，請稍後再試")
+                else:
+                    push_message(line_user_id, "你好")
         return "ok"
     except Exception as e:
         import traceback

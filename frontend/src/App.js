@@ -15,8 +15,11 @@ import RegisterForm from "./features/user/RegisterForm";
 import ForgetForm from "./features/user/ForgetForm";
 import UserDetail from "./features/user/UserDetail"; 
 import ResetPassword from "./features/user/ResetPassword"; 
+import CustomerChat from "./features/user/CustomerChat";
 
 import AdminPage from "./features/admin/AdminPage";
+import AdminReply from "./features/admin/AdminReply";
+
 import SidebarDrawer from "./features/sidebar/SidebarDrawer";
 
 
@@ -35,10 +38,11 @@ function App() {
 
   const loggedIn = !!localStorage.getItem("token");
   const role = localStorage.getItem("role") || "";
-  
   return (
+    
      <BrowserRouter>
       {/* 右上登入按鈕，只有未登入時出現 */}
+      
       {!loggedIn && <LoginButton />}
 
        {/* SidebarDrawer 不分登入都顯示 */}
@@ -64,9 +68,13 @@ function App() {
           <Route path="/guest-order-detail" element={<GuestOrderDetail />} />
           <Route path="/profile" element={loggedIn ? <UserProfile /> : <Navigate to="/login" />} />
           <Route path="/profile/edit" element={loggedIn ? <EditProfile /> : <Navigate to="/login" />} />
+          <Route path="/chat" element={loggedIn ? <CustomerChat /> : <Navigate to="/login" />} />
+          
           <Route path="/about" element={<About />} />
           <Route path="/admin/users/:id" element={<UserDetail />} />
           <Route path="/admin" element={loggedIn && role === "admin" ? <AdminPage /> : <Navigate to="/login" />} />
+          <Route path="/admin/reply" element={loggedIn && role === "admin" ? <AdminReply /> : <Navigate to="/login" />} />
+
           <Route path="/reset_password" element={<ResetPassword />} />
           <Route path="*" element={<div>404 Not Found</div>} />
         </Routes>

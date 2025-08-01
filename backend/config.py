@@ -41,15 +41,16 @@ class BaseConfig:
 class DevelopmentConfig(BaseConfig):
     DEBUG = True
     # 可以自行選擇用哪個資料庫（local時）
-    SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI_LOCALHOST", BaseConfig.SQLALCHEMY_DATABASE_URI)
+    SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI_LOCALHOST", "postgresql://postgres:talen168168@localhost:5432/Ecommerce")
     FRONTEND_BASE_URL = "http://localhost:3000"
     BACKEND_BASE_URL = "http://localhost:5000"
+
+    
 class ProductionConfig(BaseConfig):
     DEBUG = False
-    #FRONTEND_BASE_URL = "https://ecommerce-frontend-latest.onrender.com/"
-    #BACKEND_BASE_URL = "https://ecommerce-backend-latest-6fr5.onrender.com/"
-    FRONTEND_BASE_URL = "https://ecommerce-frontend-production-d012.up.railway.app/"
-    BACKEND_BASE_URL = "https://ecommerce-backend-production-83d4.up.railway.app/"
+    FRONTEND_BASE_URL = "https://ecommerce-frontend-production-d012.up.railway.app"
+    BACKEND_BASE_URL = "https://ecommerce-backend-production-83d4.up.railway.app"
+
 class TestingConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI_TEST", "postgresql://postgres:talen168168@localhost:5432/Ecommerce_test")
@@ -64,6 +65,8 @@ config = {
 
 def get_current_config():
     import os
-    config_name = os.getenv("FLASK_ENV", "default")
+    #config_name = os.getenv("FLASK_ENV", "default")
     config_name = os.getenv('APP_CONFIG') or os.getenv('FLASK_ENV', 'default')
+    print("Current config:", config_name)
+    print(config[config_name])
     return config[config_name]

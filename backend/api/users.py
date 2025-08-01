@@ -231,7 +231,7 @@ def update_user(user_id):
 @jwt_required()
 def recommend_for_user(user_id):
     """
-    個人化推薦（依購買紀錄 推薦同類別的熱賣商品）
+    個人化推薦（依購買紀錄 推薦同類別的熱賣商品 若沒有購買紀錄 推薦熱賣商品）
     ---
     tags:
       - users
@@ -287,5 +287,19 @@ def recommend_for_user(user_id):
         return jsonify({"error": "Permission denied"}), 403
 
     limit = request.args.get('limit', 5, type=int)
+
+    # 1. 先取得個人化推薦
     products = ProductService.recommend_for_user(user_id, limit)
+    product_ids = set([p.id for p in products])
+
+    # 2. 如果不足，補熱賣商品（排除重複）
+    if len(products) < limit:
+        hot_products = ProductService.get_top_products(limit=limit * 2)  # 多取一點避免重複
+        for p in hot_products:
+            if p.id not in product_ids:
+                products.append(p)
+                product_ids.add(p.id)
+            if len(products) >= limit:
+                break
+
     return jsonify([p.to_dict() for p in products])

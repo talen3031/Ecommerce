@@ -12,6 +12,25 @@ class Category(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text)
 
+class ChatMessage(db.Model):
+    __tablename__ = 'chat_messages'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    sender = db.Column(db.String(20), nullable=False)  # 'user' or 'admin'
+    message = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    # relationship（方便查詢用戶聊天紀錄）
+    user = db.relationship('User', backref=db.backref('chat_messages', lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "sender": self.sender,
+            "message": self.message,
+            "created_at": self.created_at.isoformat() if self.created_at else None
+        }
+
 class Product(db.Model):
     __tablename__ = 'products'
     id = db.Column(db.Integer, primary_key=True)

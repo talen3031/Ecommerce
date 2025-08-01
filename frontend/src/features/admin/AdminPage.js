@@ -3,6 +3,8 @@ import { Tabs, message } from "antd";
 import UserList from "./UserList";
 import ProductManager from "./ProductManager";
 import OrderManger from "./OrderManger";
+import AdminReply from "./AdminReply";
+
 import DiscountCodeManger from "./DiscountCodeManger";
 import { useNavigate } from "react-router-dom";
 import '../../styles/AdminPage.css'
@@ -35,6 +37,7 @@ function AdminPage() {
           { key: "products", label: "商品管理", children: <ProductManager /> },
           { key: "orders", label: "訂單管理", children: <OrderManger /> },
           { key: "discount", label: "折扣碼管理", children: <DiscountCodeManger /> },
+          { key: "reply", label: "客服訊息管理", children: <AdminReply /> }, // 這一行
         ]}
       />
     </div>
