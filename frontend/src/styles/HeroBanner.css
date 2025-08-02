@@ -1,0 +1,94 @@
+/* src/components/HeroBanner.css */
+.hero-banner {
+  background: linear-gradient(135deg, #090909ff 0%, #0d0d0dff 100%);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  min-height: 88px;
+  padding: 22px 0 12px;
+}
+
+.hero-banner-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.hero-banner-title {
+  font-family: 'Bangers', cursive;
+  color: #FFD900;
+  font-size: clamp(2.2rem, 7vw, 4rem);
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-shadow:
+    -3px -3px 0 #E0341B,
+    2px -2px 0 #E0341B,
+    -2px  2px 0 #E0341B,
+    2px  2px 0 #E0341B,
+    0px  3px 0 #E0341B,
+    0px -3px 0 #E0341B;
+  line-height: 1.05;
+  word-break: break-word;
+  white-space: nowrap;
+}
+
+.hero-banner-title a {
+  color: #FFD900;
+  text-decoration: none;
+  cursor: pointer;
+  display: inline-block;
+}
+
+/* 右上角按鈕區（固定在 Banner 右上，垂直置中） */
+.hero-banner-actions {
+  position: absolute;
+  top: 50%;
+  right: 36px;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 手機 RWD（小螢幕） */
+@media (max-width: 900px) {
+  .hero-banner {
+    min-height: 64px;
+    padding: 14px 0 7px;
+  }
+  .hero-banner-content {
+    padding: 0 10px;
+  }
+  .hero-banner-actions {
+    right: 12px;
+    gap: 4px;
+  }
+  .hero-banner-title {
+    font-size: 2.2rem;
+    white-space: normal;
+  }
+
+  
+}
+/* 桌機/平板時（icon 正常大小，通常 26px）*/
+.hero-banner-actions .ant-btn .anticon {
+  font-size: 26px;
+}
+
+/* 手機螢幕讓兩顆 icon 都再小一點 */
+@media (max-width: 900px) {
+  .hero-banner-actions .ant-btn .anticon {
+    font-size: 22px !important;
+  }
+}
+/* 更窄的手機再更小 */
+@media (max-width: 480px) {
+  .hero-banner-actions .ant-btn .anticon {
+    font-size: 18px !important;
+  }
+}
