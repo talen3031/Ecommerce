@@ -41,12 +41,7 @@ function App() {
   return (
     
      <BrowserRouter>
-      {/* 右上登入按鈕，只有未登入時出現 */}
-      
-      {!loggedIn && <LoginButton />}
-
-       {/* SidebarDrawer 不分登入都顯示 */}
-      <SidebarDrawer loggedIn={loggedIn} role={role} />
+  
 
       {/* 主內容往右偏移（空出 Sidebar 空間），未登入時 marginLeft 設0 */}
       <div >

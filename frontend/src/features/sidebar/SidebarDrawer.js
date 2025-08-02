@@ -29,19 +29,27 @@ function SidebarDrawer({ loggedIn, role }) {
   // ====== 這裡不再 return null，讓訪客也能拉出側邊欄 ======
   return (
   <>
-    {/* 只有 Drawer 關閉時才顯示漢堡按鈕 */}
-    {!open && (
+    {/*漢堡按鈕 */}
       <Button
-        icon={<MenuOutlined />}
+        type="text" // 純 icon 無底色
+        icon={<MenuOutlined style={{ color: "#FFD900", fontSize: 26 }} />}
         style={{
-          position: "fixed", top: 24, left: 24, zIndex: 2000, width: 42, height: 42,
-          fontSize: 20, background: "#fff", border: "1px solid #eee", boxShadow: "0 1px 6px #ddd"
+          background: "transparent",
+          border: "none",
+          boxShadow: "none",
+          padding: 0,
+          minWidth: 0,
+          height: 38,
+          lineHeight: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
         }}
         onClick={() => setOpen(true)}
+        aria-label="主選單"
       />
-    )}
     <Drawer
-      placement="left"
+      placement="right"
       closable={false}
       onClose={() => setOpen(false)}
       open={open}

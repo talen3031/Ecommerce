@@ -63,19 +63,6 @@ function ProductList() {
     fetchProducts(page, pageInfo.per_page);
   };
 
-  const handleSearch = () => {
-    setPageInfo(prev => ({ ...prev, page: 1 }));
-    fetchProducts(1, pageInfo.per_page);
-  };
-
-  const handleClear = () => {
-    setSearchValue("");
-    setMinPrice();
-    setMaxPrice();
-    setCategory("");
-    setPageInfo(prev => ({ ...prev, page: 1 }));
-    fetchProducts(1, pageInfo.per_page);
-  };
 
   const handleGoDetail = (id) => navigate(`/products/${id}`);
 
@@ -95,109 +82,6 @@ function ProductList() {
         position: 'relative'
       }}>
         {/* 搜尋/篩選區域 */}
-        <div style={{
-          background: 'white',
-          padding: '30px',
-          borderRadius: '16px',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
-          marginBottom: '40px',
-          border: '1px solid rgba(255, 255, 255, 0.2)'
-        }}>
-          <Row gutter={[16, 16]} align="middle" justify="center">
-            <Col xs={24} sm={12} md={4}>
-              <Input
-                placeholder="搜尋商品..."
-                value={searchValue}
-                onChange={e => setSearchValue(e.target.value)}
-                onPressEnter={handleSearch}
-                allowClear
-                style={{
-                  borderRadius: '8px',
-                  border: '1px solid #e1e5e9',
-                  fontSize: '14px',
-                  padding: '8px 12px',
-                  height: '40px'
-                }}
-              />
-            </Col>
-            <Col xs={12} sm={6} md={3}>
-              <InputNumber
-                placeholder="最低價"
-                min={0}
-                value={minPrice}
-                onChange={setMinPrice}
-                style={{
-                  width: '100%',
-                  borderRadius: '8px',
-                  border: '1px solid #e1e5e9',
-                  height: '40px'
-                }}
-              />
-            </Col>
-            <Col xs={12} sm={6} md={3}>
-              <InputNumber
-                placeholder="最高價"
-                min={0}
-                value={maxPrice}
-                onChange={setMaxPrice}
-                style={{
-                  width: '100%',
-                  borderRadius: '8px',
-                  border: '1px solid #e1e5e9',
-                  height: '40px'
-                }}
-              />
-            </Col>
-            <Col xs={24} sm={12} md={4}>
-              <Select
-                placeholder="選擇分類"
-                value={category}
-                options={categoryOptions}
-                onChange={val => setCategory(val)}
-                allowClear
-                style={{
-                  width: '100%',
-                  height: '40px'
-                }}
-              />
-            </Col>
-            <Col xs={12} sm={6} md={2}>
-              <Button 
-                type="primary" 
-                onClick={handleSearch}
-                style={{
-                  width: '100%',
-                  height: '40px',
-                  borderRadius: '8px',
-                  background:  'linear-gradient(135deg, #090909ff 0%, #0a0a0aff 100%)',
-                  border: 'none',
-                  fontWeight: 500,
-                  boxShadow: '0 2px 8px rgba(13, 13, 13, 0.3)',
-                  color: '#f6f6f4ff' 
-                }}
-              >
-                搜尋  
-              </Button>
-            </Col>
-            <Col xs={12} sm={6} md={2}>
-              <Button 
-                onClick={handleClear}
-                style={{
-                  width: '100%',
-                  height: '40px',
-                  borderRadius: '8px',
-                  background: '#f8f9fa',
-                  border: '1px solid #e1e5e9',
-                  color: '#6c757d',
-                  fontWeight: 500
-                }}
-              >
-                清除
-              </Button>
-            </Col>
-          </Row>
-        </div>
-
         {/* 商品網格 */}
         <Spin spinning={loading}>
           {loading ? (
@@ -337,16 +221,6 @@ function ProductList() {
                         </span>
                       )}
                     </div>
-                    <div style={{
-                      color: '#718096',
-                      fontSize: '14px',
-                      padding: '4px 8px',
-                      background: '#f7fafc',
-                      borderRadius: '6px',
-                      display: 'inline-block'
-                    }}>
-                      {categoryMap[product.category_id] || "－"}
-                    </div>
                   </Card>
                 </Col>
               ))}
@@ -404,7 +278,7 @@ function ProductList() {
           </div>
         </div>
 
-        {/* 推薦商品 */}
+        {/* 推薦商品 
         <div style={{
           background: 'white',
           padding: '40px 30px',
@@ -427,7 +301,9 @@ function ProductList() {
               limit={3}
               onSelectProduct={handleGoDetail}
             />
-        </div>
+        </div>           */}
+              
+
       </div>
     </div>
   );

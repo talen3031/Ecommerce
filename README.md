@@ -8,27 +8,6 @@
 - [Nerd.com](https://ecommerce-frontend-production-d012.up.railway.app/)
 - [後端 API（Swagger 文件）](https://ecommerce-backend-production-83d4.up.railway.app/apidocs/)
 
-
----
-## Requirement
-
-- Python >= 3.8
-- Flask
-- Flask-JWT-Extended
-- Flask-SQLAlchemy (或 SQLModel)
-- psycopg2
-- flasgger
-- pytest
-- PostgreSQL
-- dotenv
-- cloudinary
-- google-auth
-- line-bot-sdk
-- sendgrid
-- flask_caching
-- flask_socketio
-- eventlet
-- gunicorn
 ---
 
 ## 系統架構特色
@@ -78,7 +57,6 @@
                   ├── build frontend image
                   └── push 到 Docker Hub (talen3031/ecommerce-backend:latest, frontend:latest)
     ```
-
     
 ---
 
@@ -144,9 +122,30 @@
 ### 10. CI/CD 與 Docker
 - 開發、測試、部署全自動化，CI 通過後自動 build/push 至 Docker Hub
 
-## 11. WebSocket 即時客服聊天室
+### 11. WebSocket 即時客服聊天室
 - 線上客服聊天室，**支援用戶與管理員即時雙向溝通**，所有聊天訊息都會儲存於資料庫，可隨時查詢或刪除歷史紀錄。
 
-## 12. LINE Webhook / LINE Notify 整合
+### 12. LINE Webhook / LINE Notify 整合
 - 整合 **LINE Bot Webhook**，讓會員可在 LINE 聊天視窗直接查詢訂單、獲得個人推薦、查詢客服資訊等。綁定 LINE 後，還能收到各種即時推播通知。
+
+---
+## Requirement
+
+- Python >= 3.8
+- Flask
+- Flask-JWT-Extended
+- Flask-SQLAlchemy (或 SQLModel)
+- psycopg2
+- flasgger
+- pytest
+- PostgreSQL
+- dotenv
+- cloudinary
+- google-auth
+- line-bot-sdk
+- sendgrid
+- flask_caching
+- flask_socketio
+- eventlet
+- gunicorn
 ---

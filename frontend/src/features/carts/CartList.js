@@ -9,7 +9,8 @@ import { getGuestId } from "../../api/api";;
 function CartList() {
   const userId = localStorage.getItem("user_id");
   const guestId = getGuestId();
-  const isLogin = !!userId;
+  const isLogin = !!userId; 
+  
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(false);
   const [itemUpdating, setItemUpdating] = useState({});
@@ -22,7 +23,7 @@ function CartList() {
   const [discountMsg, setDiscountMsg] = useState("");
   const [applyingDiscount, setApplyingDiscount] = useState(false);
   const [discountRuleMsg, setDiscountRuleMsg] = useState("");
-
+  
   const navigate = useNavigate();
 
   // 取得購物車資料
@@ -348,17 +349,30 @@ function CartList() {
           )}
         </div>
       </Modal>
-      {/* 推薦商品 */}
-      {isLogin && (
-          <div style={{ marginTop: window.innerWidth <= 768 ? '24px' : '32px', padding: window.innerWidth <= 768 ? '0 8px' : '0' }}>
-            <RecommendList
-              userId={userId}
-              mode={mode}
-              limit={window.innerWidth <= 768 ? 2 : 3}
+      {/* 推薦商品  */}
+        <div style={{
+          background: 'white',
+          padding: '40px 30px',
+          borderRadius: '16px',
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+          marginTop: '40px'
+        }}>
+          <h2 style={{
+            fontSize: '24px',
+            fontWeight: 700,
+            color: '#2d3748',
+            marginBottom: '30px',
+            textAlign: 'left'
+          }}>
+            你可能喜歡...
+          </h2>
+          <RecommendList
+              userId={isLogin ? userId : guestId}
+              mode={isLogin ? "user" : "guest"}
+              limit={4}
               onSelectProduct={handleGoDetail}
             />
-          </div>
-        )}
+        </div>          
       
     </div>
   );
