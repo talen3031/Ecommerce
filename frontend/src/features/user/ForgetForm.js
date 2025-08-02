@@ -28,7 +28,7 @@ function ForgetForm() {
           <Input />
         </Form.Item>
         <Form.Item>
-          <Button htmlType="submit" type="primary" loading={loading} block>送出</Button>
+          <Button htmlType="submit" type="primary"  className="login-btn"  loading={loading} block>送出</Button>
         </Form.Item>
         <Form.Item>
           <Button onClick={() => navigate("/login")} block>返回登入</Button>

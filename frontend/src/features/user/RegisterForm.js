@@ -60,46 +60,8 @@ function RegisterForm() {
         >
           <Input.Password />
         </Form.Item>
-        {/* 再輸入一次密碼 */}
-        <Form.Item
-          name="confirm_password"
-          label="再輸入一次密碼"
-          dependencies={["password"]}
-          hasFeedback
-          rules={[
-            { required: true, message: "請再次輸入密碼" },
-            ({ getFieldValue }) => ({
-              validator(_, value) {
-                if (!value || getFieldValue("password") === value) {
-                  return Promise.resolve();
-                }
-                return Promise.reject("兩次輸入的密碼不一致");
-              }
-            })
-          ]}
-        >
-          <Input.Password />
-        </Form.Item>
-        <Form.Item
-          name="full_name"
-          label="全名 (選填)"
-        >
-          <Input />
-        </Form.Item>
-        <Form.Item name="address" label="地址 (選填)">
-          <Input />
-        </Form.Item>
-        <Form.Item 
-          name="phone" 
-          label="手機號碼 (選填)"
-          rules={[
-            { pattern: /^09\d{8}$/, message: "請輸入正確的手機號碼格式（09開頭共10碼）" }
-          ]}
-        >
-          <Input />
-        </Form.Item>
         <Form.Item>
-          <Button htmlType="submit" type="primary" loading={loading} block>
+          <Button htmlType="submit" type="primary" className="login-btn" loading={loading} block>
             註冊
           </Button>
         </Form.Item>

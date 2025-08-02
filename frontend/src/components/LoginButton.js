@@ -2,17 +2,10 @@
 import React from "react";
 import { Button } from "antd";
 import { UserOutlined } from "@ant-design/icons";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function LoginButton() {
   const navigate = useNavigate();
-  const location = useLocation();
-
-  if (
-    location.pathname === "/login" ||
-    location.pathname === "/register" ||
-    location.pathname === "/forget"
-  ) return null;
 
   return (
     <Button
