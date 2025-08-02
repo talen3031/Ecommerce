@@ -129,6 +129,18 @@ def line_webhook():
                         push_flex_message(line_user_id, flex_content, alt_text="訂單明細")
                     except Exception:
                         push_message(line_user_id, "查詢訂單明細失敗，請稍後再試")
+                elif msg.startswith("聯絡客服"):
+                        push_message(
+                            line_user_id,
+                            "聯絡客服資訊如下：\n"
+                            "\n"
+                            "📧 Email：talen3031@gmail.com\n"
+                            "\n"
+                            "📱 手機：0923956156\n"
+                            "\n"
+                            "💬 或至官網客服聊天室詢問(需登入)：\n"
+                            "https://ecommerce-frontend-production-d012.up.railway.app"
+                        )
                 else:
                     push_message(line_user_id, "你好")
         return "ok"

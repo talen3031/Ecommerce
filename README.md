@@ -2,7 +2,7 @@
 
 ## 專案總覽
 
-本專案是一個**全端電商平台Nerd.com**，涵蓋後端 API、前端網站、用戶通知、資料庫、CI/CD、第三方服務整合與推薦系統等多種功能。  
+本專案是一個**全端電商平台Nerd.com**，涵蓋後端 API、前端網站、用戶通知、資料庫、CI/CD、第三方服務整合與WebSocket等多種技術。  
 後端以 **Python Flask + PostgreSQL** 開發，前端採用 **React.js**，並已部署於 Railway
 
 - [Nerd.com](https://ecommerce-frontend-production-d012.up.railway.app/)
@@ -26,6 +26,9 @@
 - line-bot-sdk
 - sendgrid
 - flask_caching
+- flask_socketio
+- eventlet
+- gunicorn
 ---
 
 ## 系統架構特色
@@ -45,7 +48,9 @@
 - **推薦系統**：協同過濾、個人化推薦
 - **操作稽核日誌（Audit Log）**：所有關鍵操作皆自動記錄至Audit Log
 - **第三方 API 整合**：SendGrid Email、LINE Messaging API、Cloudinary 圖片雲
+- **WebSocket**：採用 eventlet 為 WebSocket Server，支援用戶與管理員即時雙向訊息溝通，所有訊息皆會儲存於資料庫。
 - **Docker 容器化**：  前端 (React)、後端 (Flask) 及資料庫 (PostgreSQL) 各自獨立打包成 Docker image。
+- **LINE Webhook**： 使用Flexmessage、Richmenu 美化介面，讓用戶在LINE上可以即時查詢訂單狀態、推薦商品
 - **CI/CD 自動化部署**（GitHub Actions + Docker Hub）
     - 執行 pytest(intergration test) 成功後 build & push backend/frontend Docker image
     - CI/CD流程圖
@@ -138,4 +143,10 @@
 
 ### 10. CI/CD 與 Docker
 - 開發、測試、部署全自動化，CI 通過後自動 build/push 至 Docker Hub
+
+## 11. WebSocket 即時客服聊天室
+- 線上客服聊天室，**支援用戶與管理員即時雙向溝通**，所有聊天訊息都會儲存於資料庫，可隨時查詢或刪除歷史紀錄。
+
+## 12. LINE Webhook / LINE Notify 整合
+- 整合 **LINE Bot Webhook**，讓會員可在 LINE 聊天視窗直接查詢訂單、獲得個人推薦、查詢客服資訊等。綁定 LINE 後，還能收到各種即時推播通知。
 ---
