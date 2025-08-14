@@ -14,7 +14,23 @@
 
 - **系統架構（簡化圖）**：  
     ```text
-    Client ←→ View Layer(前端React)←→ Route Layer(API Route) ←→ Service Layer ←→ ORM Layer ←→ PostgreSQL 資料庫
+    Client
+    │
+    ▼
+    [View Layer]   ←─ (React 前端)
+    │
+    ▼
+    [Route Layer]  ←─ (Flask API Route)
+    │
+    ▼
+    [Service Layer]←─ (商業邏輯)
+    │
+    ▼
+    [ORM Layer]    ←─ (SQLAlchemy)
+    │
+    ▼
+    PostgreSQL 資料庫
+
     ```                
 - **RESTful API 設計、Swagger API 文件**
 - **API 快取（Flask-Caching）**：  
