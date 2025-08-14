@@ -14,8 +14,14 @@ def test_google_login_success(client):
     # 驗證 DB 有新增用戶
     user = User.query.filter_by(email="test@example.com").first()
     assert user is not None
-    assert user.google_sub == "mock-google-sub-id"
 
+    assert user.email == "test@example.com"          # 來自 Google payload
+    assert user.google_sub == "mock-google-sub-id"   # 來自 Google payload
+    assert user.oauth_provider == "google"
+
+
+
+    
 def test_google_login_existing_user(client):
     """已存在的使用者，應該直接登入而不是重複新增"""
     # 先創建一個使用者

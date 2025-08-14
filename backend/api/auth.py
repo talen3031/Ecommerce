@@ -35,7 +35,7 @@ def login_with_google():
         "refresh_token",
         tokens["refresh_token"],
         httponly=True,
-        secure=False,        # 本地 False；上線請改 True（需 HTTPS）
+        secure=True,        # 本地 False；上線請改 True（需 HTTPS）
         samesite="Strict",   # 多網域可改 'Lax' 或 'None'（需 secure=True）
         max_age=7*24*60*60
     )
