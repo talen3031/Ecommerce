@@ -7,6 +7,10 @@ import secrets
 from datetime import datetime, timedelta
 from utils.send_email import send_email
 from config import get_current_config
+from google.oauth2 import id_token as google_id_token
+from google.auth.transport import requests as google_requests
+from service.audit_service import AuditService
+from werkzeug.security import generate_password_hash
 
 class UserService:
     @staticmethod
@@ -116,3 +120,84 @@ class UserService:
         db.session.commit()
         return user
     
+    @staticmethod
+    def login_with_google_id_token(credential: str):
+        """
+        驗證 Google ID Token，找/建使用者，回傳我方 JWT 與基本資訊。
+        只做商業邏輯，不處理 HTTP Cookie（交給 route 設置）。
+        """
+        if not credential:
+            raise ValueError("Missing credential")
+
+        # 驗證 Google ID Token（簽章/時效/受眾）
+        info = google_id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            get_current_config().GOOGLE_CLIENT_ID
+        )
+        sub = info.get("sub")
+        email = info.get("email")
+        email_verified = info.get("email_verified", False)
+        name = info.get("name")
+
+        if not email or not email_verified:
+            raise UnauthorizedError("Email not verified by Google")
+
+        # 先用 google_sub 找，其次用 email 找
+        user = None
+        if sub:
+            user = User.query.filter_by(google_sub=sub).first()
+        if not user and email:
+            user = User.query.filter_by(email=email).first()
+
+        # 更新或建立使用者
+        if user:
+            changed = False
+            if not getattr(user, "google_sub", None) and sub:
+                user.google_sub = sub
+                user.oauth_provider = "google"
+                changed = True
+            if hasattr(user, "full_name") and not user.full_name and name:
+                user.full_name = name
+                changed = True
+            if changed:
+                db.session.commit()
+        else:
+            # 全新使用者：建立本地帳號（給隨機密碼）
+            pwd = secrets.token_urlsafe(16)
+            hashed = generate_password_hash(pwd)
+            user = User(
+                email=email,
+                password=hashed,
+                role="user",
+                full_name=name if hasattr(User, "full_name") else None,
+                oauth_provider="google",
+                google_sub=sub
+            )
+            db.session.add(user)
+            db.session.commit()
+
+        # 簽發系統自己的 JWT（沿用既有風格）
+        tokens = {
+            "access_token": create_access_token(
+                identity=str(user.id),
+                additional_claims={"user_id": user.id, "role": user.role}
+            ),
+            "refresh_token": create_refresh_token(identity=str(user.id)),
+            "user_id": user.id,
+            "role": user.role,
+        }
+
+        # 審計（失敗不影響主流程）
+        try:
+            AuditService.log(
+                user_id=user.id,
+                action='login_google',
+                target_type='user',
+                target_id=user.id,
+                description=f"Google login success: {email}"
+            )
+        except Exception:
+            pass
+
+        return tokens

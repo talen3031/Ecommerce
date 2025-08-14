@@ -9,7 +9,17 @@ from config import TestingConfig
 def patch_async_notify(monkeypatch):
     monkeypatch.setattr('utils.notify_util.send_email_notify_order_created', lambda *a, **k: None)
     monkeypatch.setattr('utils.notify_util.send_line_notify_order_created', lambda *a, **k: None)
-
+    # 預設 mock Google 驗證成功
+    fake_google_payload = {
+        "sub": "mock-google-sub-id",
+        "email": "test@example.com",
+        "email_verified": True,
+        "name": "Test User"
+    }
+    monkeypatch.setattr(
+        'service.user_service.google_id_token.verify_oauth2_token',
+        lambda *a, **k: fake_google_payload
+    )
 @pytest.fixture
 def app():
     db_name = os.environ.get('TEST_DB_NAME', 'Ecommerce_test')

@@ -4,7 +4,44 @@ from service.audit_service import AuditService
 from models import User
 # refresh（從 cookie 讀 token）
 from flask_jwt_extended import jwt_required,decode_token,create_access_token
+from flask import Blueprint, request, jsonify, make_response
+from config import get_current_config
+
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+# auth.py
+
+@auth_bp.route('/google', methods=['POST'])
+def login_with_google():
+    """
+    前端送上 Google Identity Services 取得的 ID Token（credential）
+    body: { "credential": "<Google ID Token>" }
+    回傳：{ access_token, user_id, role }，並在 Cookie 設置 refresh_token
+    """
+    data = request.get_json() or {}
+    credential = data.get("credential")
+    if not credential:
+        # 交給全域 ValueError handler 回 400
+        raise ValueError("Missing credential")
+
+    tokens = UserService.login_with_google_id_token(credential)
+
+    # 設置 HttpOnly refresh_token Cookie（本地 secure=False；正式請 True + samesite 視網域）
+    resp = make_response(jsonify({
+        "access_token": tokens["access_token"],
+        "user_id": tokens["user_id"],
+        "role": tokens["role"]
+    }))
+    resp.set_cookie(
+        "refresh_token",
+        tokens["refresh_token"],
+        httponly=True,
+        secure=False,        # 本地 False；上線請改 True（需 HTTPS）
+        samesite="Strict",   # 多網域可改 'Lax' 或 'None'（需 secure=True）
+        max_age=7*24*60*60
+    )
+    return resp
+
+
 
 # 會員註冊
 @auth_bp.route('/register', methods=['POST'])
@@ -175,6 +212,7 @@ def refresh():
     except Exception as e:
         print(e)
         return jsonify({'error': 'Invalid or expired refresh token'}), 401
+
 # 登出
 @auth_bp.route('/logout', methods=['POST'])
 def logout():

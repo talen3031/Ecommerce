@@ -24,10 +24,13 @@ class BaseConfig:
     LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
     LINE_LOGIN_CHANNEL_ID = os.getenv("LINE_LOGIN_CHANNEL_ID")
     LINE_LOGIN_CHANNEL_SECRET = os.getenv("LINE_LOGIN_CHANNEL_SECRET")
-    LINE_LOGIN_CALLBACK_URL = os.getenv("LINE_LOGIN_CALLBACK_URL")
+    LINE_LOGIN_CALLBACK_URL = None
     LINEBOT_ADMIN_EMAIL = os.getenv("LINEBOT_ADMIN_EMAIL")
     LINEBOT_ADMIN_PASSWORD = os.getenv("LINEBOT_ADMIN_PASSWORD")
-
+    # GOOGLE AUTH
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")  # 若日後改用授權碼流程會用到
+    GOOGLE_REDIRECT_URI =  None
     # Email/Resend/Sendgrid
     RESEND_API_KEY = os.getenv("RESEND_API_KEY")
     SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
@@ -45,12 +48,17 @@ class DevelopmentConfig(BaseConfig):
 
     FRONTEND_BASE_URL = "http://localhost:3000"
     BACKEND_BASE_URL = "http://localhost:5000"
-
+    
+    GOOGLE_REDIRECT_URI = BACKEND_BASE_URL + "/auth/google/callback"
+    LINE_LOGIN_CALLBACK_URL = BACKEND_BASE_URL + "/linemessage/bliding"
     
 class ProductionConfig(BaseConfig):
     DEBUG = False
     FRONTEND_BASE_URL = "https://ecommerce-frontend-production-d012.up.railway.app"
     BACKEND_BASE_URL = "https://ecommerce-backend-production-83d4.up.railway.app"
+    
+    GOOGLE_REDIRECT_URI = BACKEND_BASE_URL + "/auth/google/callback"
+    LINE_LOGIN_CALLBACK_URL = BACKEND_BASE_URL + "/linemessage/bliding"
 
 class TestingConfig(BaseConfig):
     TESTING = True

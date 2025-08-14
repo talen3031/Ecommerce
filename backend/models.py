@@ -131,7 +131,9 @@ class User(db.Model):
     line_user_id = db.Column(db.String(50))
     line_display_name = db.Column(db.String(50))
     line_picture_url = db.Column(db.String(255))
-  
+    oauth_provider = db.Column(db.String(50), nullable=True)
+    google_sub = db.Column(db.String(255), unique=True, nullable=True)
+
 
     @classmethod
     def get_by_user_id(cls, user_id):
@@ -152,7 +154,9 @@ class User(db.Model):
             "role": self.role,
             "line_user_id": self.line_user_id,
             "line_display_name": self.line_display_name,
-            "line_picture_url": self.line_picture_url
+            "line_picture_url": self.line_picture_url,
+            "oauth_provider": self.oauth_provider,
+            "google_sub": self.google_sub
         }
 ORDER_STATUS = [
         'pending',
