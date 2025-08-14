@@ -30,6 +30,8 @@
 - **WebSocket**：採用 eventlet 為 WebSocket Server，支援用戶與管理員即時雙向訊息溝通，所有訊息皆會儲存於資料庫。
 - **Docker 容器化**：  前端 (React)、後端 (Flask) 及資料庫 (PostgreSQL) 各自獨立打包成 Docker image。
 - **LINE Webhook**： 使用Flexmessage、Richmenu 美化介面，讓用戶在LINE上可以即時查詢訂單狀態、推薦商品
+- **GOOGLE Auth 登入(OAuth 2.0)**： 本專案支援  Google Identity Services（ID Token 方式）登入，並在後端發送 JWT 與 refresh token。
+
 - **CI/CD 自動化部署**（GitHub Actions + Docker Hub）
     - 執行 pytest(intergration test) 成功後 build & push backend/frontend Docker image
     - CI/CD流程圖
@@ -57,7 +59,7 @@
                   ├── build frontend image
                   └── push 到 Docker Hub (talen3031/ecommerce-backend:latest, frontend:latest)
     ```
-    
+
 ---
 
 ## 主要技術
@@ -67,7 +69,7 @@
 - **前端**：React.js / Ant Design / Axios
 - **測試**：pytest
 - **DevOps**：Docker  / GitHub Actions / Docker Hub
-- **雲端整合**：Railway（主機及資料庫部署）、SendGrid（Email）、Cloudinary（圖片上傳）、LINE Messaging API（綁定後可即時通知）
+- **雲端整合**：Railway（主機及資料庫部署）、SendGrid（Email）、Cloudinary（圖片上傳）、LINE Messaging API（綁定後可即時通知）、Google Auth（OAuth 2.0 登入）
 
 ---
 
@@ -77,6 +79,7 @@
 - 註冊、登入、JWT 驗證
 - 查詢個人／全部用戶資料（管理員專屬）
 - 重設密碼（Email 發送驗證連結）
+- Google Auth 登入
 - 綁定 LINE 帳號（登入／通知）
 
 ### 2. 商品系統
@@ -128,6 +131,42 @@
 ### 12. LINE Webhook / LINE Notify 整合
 - 整合 **LINE Bot Webhook**，讓會員可在 LINE 聊天視窗直接查詢訂單、獲得個人推薦、查詢客服資訊等。綁定 LINE 後，還能收到各種即時推播通知。
 
+### 13. Google Auth 登入
+- 支援 **Google Identity Services**（ID Token 方式）登入，並在後端發送 JWT 與 refresh token。
+- **Google Auth 登入流程**
+    ```text
+    使用者點擊前端 [Google 登入按鈕]
+        │
+        ▼
+    前端（Google Identity Services）
+        │ 取得 Google ID Token (credential)
+        ▼
+    前端呼叫後端 API
+        POST /auth/google
+        body: { credential: "<Google ID Token>" }
+        │
+        ▼
+    後端驗證 Google ID Token
+        ├─ 確認簽章有效、audience 正確
+        ├─ 驗證 email 是否已驗證
+        └─ 取得使用者 Google 資訊 (sub, email, name...)
+        │
+        ▼
+    後端查詢/建立本地帳號
+        ├─ 先用 google_sub 找，其次用 email 找
+        ├─ 若不存在 → 建立新帳號
+        └─ 更新綁定 google_sub / 名稱
+        │
+        ▼
+    後端簽發 JWT Token
+        ├─ access_token (回傳給前端)
+        └─ refresh_token (HttpOnly Cookie)
+        │
+        ▼
+    前端儲存 access_token
+        └─ 後續 API 請求夾帶 Authorization Bearer Token
+
+    ```
 ---
 ## Requirement
 
