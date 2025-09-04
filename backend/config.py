@@ -10,6 +10,7 @@ class BaseConfig:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
      # SQLAlchemy 連線池設定
     SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
         "pool_size": 2,         # 每個 Gunicorn worker 預留 2 條連線
         "max_overflow": 2,      # 額外允許臨時 2 條
         "pool_recycle": 300,    # 300 秒強制回收，避免閒置被 Railway 收掉
