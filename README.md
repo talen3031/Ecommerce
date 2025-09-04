@@ -6,7 +6,7 @@
 後端以 **Python Flask + PostgreSQL** 開發，前端採用 **React.js**，並已部署於 Railway
 
 - [Nerd.com](https://ecommerce-frontend-production-d012.up.railway.app/)
-- [後端 API（Swagger 文件）](https://ecommerce-backend-production-83d4.up.railway.app/apidocs/)
+- [後端 API（Swagger 文件）](https://ecommerce-backend-production-a470.up.railway.app/apidocs/)
 
 ---
 
