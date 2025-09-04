@@ -61,7 +61,7 @@ class DevelopmentConfig(BaseConfig):
 class ProductionConfig(BaseConfig):
     DEBUG = False
     FRONTEND_BASE_URL = "https://ecommerce-frontend-production-d012.up.railway.app"
-    BACKEND_BASE_URL = "https://ecommerce-backend-production-83d4.up.railway.app"
+    BACKEND_BASE_URL = "https://ecommerce-backend-production-a470.up.railway.app"
     
     GOOGLE_REDIRECT_URI = BACKEND_BASE_URL + "/auth/google/callback"
     LINE_LOGIN_CALLBACK_URL = BACKEND_BASE_URL + "/linemessage/bliding"

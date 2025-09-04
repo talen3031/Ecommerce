@@ -167,7 +167,7 @@
 
 ### 9. Swagger API 文件
 - 內建 `/apidocs/` 提供全 API 自動文件，可直接線上測試
-- https://ecommerce-backend-production-83d4.up.railway.app/apidocs/
+- [後端 API（Swagger 文件）](https://ecommerce-backend-production-a470.up.railway.app/apidocs/)
 
 ### 10. CI/CD 與 Docker
 - 開發、測試、部署全自動化，CI 通過後自動 build/push 至 Docker Hub
