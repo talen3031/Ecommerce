@@ -57,13 +57,14 @@ def create_app(config_name=None, test_config=None):
 
     # ========== 啟動時印出環境相關設定 ==========
     def print_startup_config():
-        print("========== 服務啟動參數 ==========")
-        print(f"環境：{CurrentConfig.__name__}")
-        print(f"FRONTEND_BASE_URL: {getattr(CurrentConfig, 'FRONTEND_BASE_URL', None)}")
-        print(f"BACKEND_BASE_URL: {getattr(CurrentConfig, 'BACKEND_BASE_URL', None)}")
-        print(f"DATABASE URI: {getattr(CurrentConfig, 'SQLALCHEMY_DATABASE_URI', None)}")
-        print(f"DEBUG: {getattr(CurrentConfig, 'DEBUG', None)}")
-        print("===================================")
+        print("========== 🚀 服務啟動參數 ===========")
+        print(f"🌍 環境：{CurrentConfig.__name__}")
+        print(f"🔗 FRONTEND_BASE_URL: {getattr(CurrentConfig, 'FRONTEND_BASE_URL', None)}")
+        print(f"🖥️ BACKEND_BASE_URL: {getattr(CurrentConfig, 'BACKEND_BASE_URL', None)}")
+        print(f"🗄️ DATABASE URI: {getattr(CurrentConfig, 'SQLALCHEMY_DATABASE_URI', None)}")
+        print(f"⚙️ SQLALCHEMY_ENGINE_OPTIONS: {getattr(CurrentConfig, 'SQLALCHEMY_ENGINE_OPTIONS', None)}")
+        print(f"🐞 DEBUG: {getattr(CurrentConfig, 'DEBUG', None)}")
+        print("====================================")
 
     print_startup_config()
     # 2. CORS
