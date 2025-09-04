@@ -8,7 +8,13 @@ class BaseConfig:
     SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
     SQLALCHEMY_DATABASE_URI_LOCALHOST = os.getenv("SQLALCHEMY_DATABASE_URI_LOCALHOST")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
+     # SQLAlchemy 連線池設定
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_size": 2,         # 每個 Gunicorn worker 預留 2 條連線
+        "max_overflow": 2,      # 額外允許臨時 2 條
+        "pool_recycle": 300,    # 300 秒強制回收，避免閒置被 Railway 收掉
+        "pool_pre_ping": True,  # 取用前先測試，壞連線會自動丟掉
+    }
     # JWT
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "default_jwt_secret")
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=60)

@@ -47,7 +47,39 @@
 - **Docker 容器化**：  前端 (React)、後端 (Flask) 及資料庫 (PostgreSQL) 各自獨立打包成 Docker image。
 - **LINE Webhook**： 使用Flexmessage、Richmenu 美化介面，讓用戶在LINE上可以即時查詢訂單狀態、推薦商品
 - **GOOGLE Auth 登入(OAuth 2.0)**： 本專案支援  Google Identity Services（ID Token 方式）登入，並在後端發送 JWT 與 refresh token。
+- **雙進程架構**
+    - ***API 服務***：使用 Gunicorn sync worker，處理 REST API 請求
+    - ***SocketIO 服務***：使用 Gunicorn eventlet worker，專門處理 WebSocket 長連線  
+    - ***Nginx***：作為反向代理，唯一對外公開的入口，根據路徑分流到不同的 Gunicorn 進程  
+    ```text
+        ┌─────────────────────────┐
+        │        使用者瀏覽器       │
+        │  (Frontend React / Vue) │
+        └─────────────┬───────────┘
+                      │  HTTP / WebSocket 請求
+                      ▼
+        ┌─────────────────────────┐
+        │         Nginx           │  ← 只對外暴露 $PORT
+        │  - /api/*   → 8000      │
+        │  - /socket.io/* → 8001  │
+        └─────────────┬───────────┘
+              ┌───────┴───────────────┐
+              │                       │
+   ┌──────────▼─────────┐   ┌─────────▼──────────┐
+   │ Gunicorn (Sync)    │   │ Gunicorn (Eventlet)│
+   │ -w 2               │   │ -k eventlet -w 1   │
+   │ Flask API          │   │ Flask-SocketIO     │
+   └──────────┬─────────┘   └─────────┬──────────┘
+              │                       │
+              └──────────┬────────────┘
+                         │
+                         ▼
+             ┌─────────────────────────┐
+             │   PostgreSQL (Railway)  │
+             │   SQLAlchemy ORM        │
+             └─────────────────────────┘
 
+    ```
 - **CI/CD 自動化部署**（GitHub Actions + Docker Hub）
     - 執行 pytest(intergration test) 成功後 build & push backend/frontend Docker image
     - CI/CD流程圖
@@ -183,6 +215,7 @@
         └─ 後續 API 請求夾帶 Authorization Bearer Token
 
     ```
+
 ---
 ## Requirement
 

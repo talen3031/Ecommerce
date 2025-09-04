@@ -7,9 +7,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# 安裝 nginx
+RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
+
+# 複製 Nginx 設定（會用 envsubst 注入 $PORT）
+COPY nginx.conf /etc/nginx/conf.d/default.conf.template
+
 EXPOSE 8080
-
-# 啟動指令用 docker-compose 控制，這邊不寫死
-CMD ["sh", "-c", "python create_tables.py && gunicorn -k eventlet -w 2 app:app"]
-
-
+# 起 API（8000） gunicorn -w 2 -b 127.0.0.1:8000 app:app 
+# 起 SocketIO（8001）gunicorn -k eventlet -w 1 -b 127.0.0.1:8001 app:app  
+# 用 envsubst 把 $PORT 帶進 nginx.conf 
+# 啟動 Nginx（監聽 $PORT，分流到 8000/8001）
+CMD ["sh", "-c", "python create_tables.py && gunicorn -w 2 -b 127.0.0.1:8000 app:app & gunicorn -k eventlet -w 1 -b 127.0.0.1:8001 app:app & envsubst '$${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
