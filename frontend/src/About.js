@@ -1,5 +1,5 @@
 import React from "react";
-
+import rawTypeLogo from "./assets/rawtype-logo.png";
 const skills = [
   "街舞", "Python", "Flask", "PostgreSQL", "Docker",  "popping", "Funk","React.js","CI/CD"
 ];
@@ -16,8 +16,8 @@ function About() {
       textAlign: "center"
     }}>
       <img
-        src="https://i.ibb.co/2YmvkczW/2025-07-18-225807.png"
-        alt="Python 程式碼頭像"
+        src={rawTypeLogo}
+        alt="RawType Logo"
         style={{
             width: 120,
             height: 120,
@@ -34,12 +34,12 @@ function About() {
         letterSpacing: 2,
         marginBottom: 6,
         color: "#222"
-      }}>Hi, 我是 Tsai B</h1>
+      }}>Welcome to Raw type</h1>
       <div style={{
         color: "#888",
         fontSize: "1.1rem",
         marginBottom: 28
-      }}>Graduated from the Institute of Information Management,<br /> National Cheng Kung University <br />Made of Funk, a street dance crew from Tainan</div>
+      }}>“Stay Raw. Stay Typed.”</div>
       <div style={{
         fontSize: "1.08rem",
         lineHeight: 2.1,
@@ -48,14 +48,12 @@ function About() {
         maxWidth: 460,
         color: "#444"
       }}>
-        歡迎來到Raw type<br />
-        這個網站是我自己設計的電商網站<br />
-        後端使用Python Flask，前端使用React.js實作<br />
-        除了網站是我自己設計的，網站上的衣服也是 !<br />
-        我喜歡寫程式，享受開發從0到1的成就感。<br />
-        除了coding之外，我也是一名街舞舞者<br />跳的舞風是popping，喜歡Funk音樂。<br />
-        未來也希望能結合科技與興趣，創造更多有趣的專案。<br />
-        Let’s make something nerdy and cool !
+        There are things we feel but never say.<br />
+        Thoughts that stay raw, emotions left unscripted.<br />
+        RAWTYPE exists to turn silence into style.<br />
+        We take unspoken words and print them loud — on fabric, on street, on skin.<br />
+        Expression doesn’t always need a voice.<br />
+        Yeah, just wear it.<br />
       </div>
       <div style={{
         display: "flex",
@@ -82,22 +80,8 @@ function About() {
         color: "#444",
         fontSize: "0.98rem"
       }}>
-        Email: talen3031@gmail.com
+        Contact Email: talen3031@gmail.com
       </div>
-      <div style={{
-            marginTop: 18,
-            color: "#444",
-            fontSize: "0.98rem"
-            }}>
-            GitHub: <a
-                href="https://github.com/talen3031/Ecommerce"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "#1890ff", textDecoration: "underline" }}
-            >
-                https://github.com/talen3031/Ecommerce
-            </a>
-            </div>
     </div>
     
   );
