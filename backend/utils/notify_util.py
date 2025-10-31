@@ -17,7 +17,7 @@ def send_email_notify_order_created(order):
         email = order.guest_email
 
     if email:
-        subject = "您在Nerd.com的訂單已成立！"
+        subject = "您在Raw type的訂單已成立！"
         items_html = ""
         for item in order.order_items:
             img_url = item.product.images[0] if item.product.images and len(item.product.images) > 0 else None
@@ -86,7 +86,7 @@ def send_email_notify_user_order_status(order):
         email = order.guest_email
 
     if email:
-        subject = f"您在Nerd.com的訂單狀態已更新為「{order.status}」"
+        subject = f"您在Raw type的訂單狀態已更新為「{order.status}」"
         html_lines = [
             f"您好，<br>"
             f"您的訂單（編號：{order.id}）狀態已更新為：<b>{order.status}</b>。<br>"
@@ -126,9 +126,9 @@ def send_email_notify_users_cart_product_on_sale(product_id, discount, start_dat
         if cart.status == "active":
             user = cart.user
             if user and user.email and user.id not in notified_user_ids:
-                subject = f"您在Nerd.com購物車內的「{product.title}」開始特價囉！"
+                subject = f"您在Raw type購物車內的「{product.title}」開始特價囉！"
                 html_content = (
-                    f"您好，您Nerd.com購物車中的商品 <b>{product.title}</b> 現正特價！<br>"
+                    f"您好，您Raw type購物車中的商品 <b>{product.title}</b> 現正特價！<br>"
                     f"原價：<s>{float(product.price)}</s> 元<br>"
                     f"特價：<span style='color:red;font-size:20px;'>{float(product.price) * discount:.2f}</span> 元<br>"
                     f"優惠期間：{start_date_str} ~ {end_date_str}<br>"

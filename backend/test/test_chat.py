@@ -7,10 +7,10 @@ from ext_socketio import socketio
 def user_token_and_id(client):
     # 註冊用戶
     client.post('/auth/register', json={
-        'email': 'user1@nerd.com',
+        'email': 'user1@Raw type',
         'password': '123456'
     })
-    login_res = client.post('/auth/login', json={'email': 'user1@nerd.com', 'password': '123456'})
+    login_res = client.post('/auth/login', json={'email': 'user1@Raw type', 'password': '123456'})
     token = login_res.get_json()['access_token']
     user_id = login_res.get_json()['user_id']
     return token, user_id
@@ -19,11 +19,11 @@ def user_token_and_id(client):
 def admin_token_and_id(client):
     # 註冊管理員
     client.post('/auth/register', json={
-        'email': 'admin@nerd.com',
+        'email': 'admin@Raw type',
         'password': '123456',
         'role': 'admin'
     })
-    login_res = client.post('/auth/login', json={'email': 'admin@nerd.com', 'password': '123456'})
+    login_res = client.post('/auth/login', json={'email': 'admin@Raw type', 'password': '123456'})
     token = login_res.get_json()['access_token']
     user_id = login_res.get_json()['user_id']
     return token, user_id
@@ -91,7 +91,7 @@ def test_get_chat_users(client, chat_user_ready, admin_token_and_id):
     admin_token, _ = admin_token_and_id
     resp = client.get("/chat/users", headers={"Authorization": f"Bearer {admin_token}"})
     data = resp.get_json()
-    assert any(u["email"] == "user1@nerd.com" for u in data)
+    assert any(u["email"] == "user1@Raw type" for u in data)
 
 def test_delete_user_chat_history(client, chat_user_ready, admin_token_and_id):
     admin_token, _ = admin_token_and_id

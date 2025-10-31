@@ -91,7 +91,7 @@ function SidebarDrawer({ loggedIn, role }) {
           </>
         )}
         <Menu.Item key="about" icon={<InfoCircleOutlined />} onClick={() => navigate("/about")}>
-          關於Nerd.com
+          關於Raw type
         </Menu.Item>
         {/* 只有管理員才有後台 */}
         {loggedIn && role === "admin" && (

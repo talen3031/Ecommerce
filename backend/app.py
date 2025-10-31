@@ -142,7 +142,7 @@ def create_app(config_name=None, test_config=None):
 
     @app.route('/')
     def index():
-        return "Welcometo nerd.com backend! \n Nginx is listening http://0.0.0.0:8080 \n API is running on http://127.0.0.1:8000 \n socketio is running on http://127.0.0.1:8001"
+        return "Welcometo Raw type backend! \n Nginx is listening http://0.0.0.0:8080 \n API is running on http://127.0.0.1:8000 \n socketio is running on http://127.0.0.1:8001"
 
     return app
 app = create_app() 

@@ -48,7 +48,7 @@ function About() {
         maxWidth: 460,
         color: "#444"
       }}>
-        歡迎來到Nerd.com<br />
+        歡迎來到Raw type<br />
         這個網站是我自己設計的電商網站<br />
         後端使用Python Flask，前端使用React.js實作<br />
         除了網站是我自己設計的，網站上的衣服也是 !<br />

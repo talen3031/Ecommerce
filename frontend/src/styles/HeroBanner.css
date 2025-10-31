@@ -92,3 +92,10 @@
     font-size: 18px !important;
   }
 }
+.hero-banner-logo img {
+  width: clamp(80px, 25vw, 160px); /* 最小120px、最大300px，依螢幕自動調整 */
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}

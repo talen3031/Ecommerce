@@ -1,11 +1,11 @@
-# Nerd.com
+# Raw type
 
 ## 專案總覽
 
-本專案是一個**全端電商平台Nerd.com**，涵蓋後端 API、前端網站、用戶通知、資料庫、CI/CD、第三方服務整合與WebSocket等多種技術。  
+本專案是一個**全端電商平台Raw type**，涵蓋後端 API、前端網站、用戶通知、資料庫、CI/CD、第三方服務整合與WebSocket等多種技術。  
 後端以 **Python Flask + PostgreSQL** 開發，前端採用 **React.js**，並已部署於 Railway
 
-- [Nerd.com](https://ecommerce-frontend-production-d012.up.railway.app/)
+- [Raw type](https://ecommerce-frontend-production-d012.up.railway.app/)
 - [後端 API（Swagger 文件）](https://ecommerce-backend-production-a470.up.railway.app/apidocs/)
 
 ---

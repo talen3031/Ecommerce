@@ -14,7 +14,7 @@ from flask import current_app
 #     resend.api_key = api_key
 
 #     response = resend.Emails.send({
-#         "from": "Nerd.com <Nerd@resend.dev>",
+#         "from": "Raw type <Nerd@resend.dev>",
 #         "to": [to_email],
 #         "subject": subject,
 #         "html": html_content,

@@ -73,7 +73,7 @@ class UserService:
         user = User.get_by_user_id(user_id)
         
         if user and user.email:
-            subject = "【Nerd.com】密碼重設連結"
+            subject = "【Raw type】密碼重設連結"
             content = f"請點擊以下連結重設密碼：<br><a href='{reset_link}'>{reset_link}</a>"
             try:
                 send_email(user.email, subject, content)
